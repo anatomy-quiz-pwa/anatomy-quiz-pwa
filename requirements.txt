@@ -1,3 +1,5 @@
 Flask
 Flask-Dance
-requests 
+requests
+gspread
+google-auth 
