@@ -14,7 +14,7 @@ google_bp = make_google_blueprint(
     client_id=GOOGLE_CLIENT_ID,
     client_secret=GOOGLE_CLIENT_SECRET,
     scope=["profile", "email"],
-    redirect_url="/login/callback"
+    redirect_url="https://anatomy-quiz-pwa.onrender.com/login/callback"
 )
 app.register_blueprint(google_bp, url_prefix="/login")
 
