@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What's Up anatomy 解剖力</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="icon" href="{{ url_for('static', filename='brand_logo.png') }}">
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f7efe2;
+        }
+        .logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .logo img {
+            width: 120px;
+            height: auto;
+        }
+        .result-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .score {
+            font-size: 2em;
+            color: #2196f3;
+            margin: 20px 0;
+        }
+        .restart-btn {
+            padding: 10px 20px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin-top: 20px;
+        }
+        .restart-btn:hover {
+            background-color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo">
+        <img src="{{ url_for('static', filename='brand_logo.png') }}" alt="品牌 Logo">
+    </div>
+    <div class="result-container">
+        <h1>測驗完成！</h1>
+        <div class="score">
+            得分：<span id="score">0</span> / <span id="total">0</span>
+        </div>
+        <p>感謝您參與解剖學測驗！</p>
+        <button class="restart-btn" onclick="window.location.href='/'">重新開始</button>
+    </div>
+
+    <script>
+        // 從 localStorage 獲取分數
+        const score = localStorage.getItem('score') || 0;
+        const total = localStorage.getItem('total') || 0;
+        
+        document.getElementById('score').textContent = score;
+        document.getElementById('total').textContent = total;
+    </script>
+</body>
+</html> 

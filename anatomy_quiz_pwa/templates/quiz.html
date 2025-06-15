@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What's Up anatomy 解剖力</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="icon" href="{{ url_for('static', filename='brand_logo.png') }}">
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f7efe2;
+        }
+        .logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .logo img {
+            width: 120px;
+            height: auto;
+        }
+        .quiz-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .question {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .options {
+            display: grid;
+            gap: 10px;
+        }
+        .option {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .option:hover {
+            background-color: #f0f0f0;
+        }
+        .option.selected {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .correct {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+        }
+        .incorrect {
+            background-color: #ffcdd2;
+            color: #c62828;
+        }
+        .next-btn {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .next-btn:hover {
+            background-color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-bar" style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px;gap:10px;">
+        {% if user %}
+            {% if user.picture %}
+                <img src="{{ user.picture }}" alt="頭像" style="width:32px;height:32px;border-radius:50%;vertical-align:middle;">
+            {% endif %}
+            <span>歡迎，{{ user.name or user.email }}</span>
+            <a href="{{ url_for('logout') }}" style="color:#fff;background:#2196f3;padding:6px 16px;border-radius:4px;text-decoration:none;">登出</a>
+        {% else %}
+            <a href="{{ url_for('login') }}" style="color:#fff;background:#2196f3;padding:6px 16px;border-radius:4px;text-decoration:none;">使用 Google 登入</a>
+        {% endif %}
+    </div>
+    <div class="logo">
+        <img src="{{ url_for('static', filename='brand_logo.png') }}" alt="品牌 Logo">
+    </div>
+    <div class="quiz-container">
+        <h1>What's up Anatomy × 解剖力累積</h1>
+        <div id="days-streak" style="text-align:center; color:#2196f3; font-weight:bold; margin-bottom:20px;"></div>
+        <div id="question-container">
+            <div class="question" id="question-text"></div>
+            <div class="options" id="options-container"></div>
+        </div>
+        <div id="feedback" class="feedback"></div>
+        <button id="next-btn" class="next-btn">下一題</button>
+    </div>
+
+    <script>
+        let currentQuestionIndex = 0;
+        const questions = {{ questions|tojson|safe }};
+
+        // 累積天數計算
+        function getTodayStr() {
+            const today = new Date();
+            return today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate();
+        }
+        let streak = localStorage.getItem('anatomy_streak') ? JSON.parse(localStorage.getItem('anatomy_streak')) : {days:0, last:''};
+        const todayStr = getTodayStr();
+        if (streak.last !== todayStr) {
+            streak.days += 1;
+            streak.last = todayStr;
+            localStorage.setItem('anatomy_streak', JSON.stringify(streak));
+        }
+        document.getElementById('days-streak').textContent = `你已累積進入本網站 ${streak.days} 天`;
+
+        function displayQuestion() {
+            const question = questions[currentQuestionIndex];
+            document.getElementById('question-text').textContent = question.question;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach(option => {
+                const button = document.createElement('div');
+                button.className = 'option';
+                button.textContent = option;
+                button.onclick = () => checkAnswer(option);
+                optionsContainer.appendChild(button);
+            });
+
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'none';
+        }
+
+        function checkAnswer(selectedAnswer) {
+            const question = questions[currentQuestionIndex];
+            const feedback = document.getElementById('feedback');
+            const options = document.querySelectorAll('.option');
+            
+            options.forEach(option => {
+                option.onclick = null;
+                if (option.textContent === question.correct) {
+                    option.style.backgroundColor = '#c8e6c9';
+                }
+            });
+
+            if (selectedAnswer === question.correct) {
+                feedback.className = 'feedback correct';
+                feedback.textContent = '答對了！';
+            } else {
+                feedback.className = 'feedback incorrect';
+                feedback.textContent = `答錯了！正確答案是：${question.correct}`;
+            }
+
+            feedback.style.display = 'block';
+            document.getElementById('next-btn').style.display = 'block';
+        }
+
+        document.getElementById('next-btn').onclick = () => {
+            currentQuestionIndex = (currentQuestionIndex + 1) % questions.length;
+            displayQuestion();
+        };
+
+        // 註冊 Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/service-worker.js')
+                .then(registration => {
+                    console.log('ServiceWorker 註冊成功');
+                })
+                .catch(error => {
+                    console.log('ServiceWorker 註冊失敗:', error);
+                });
+        }
+
+        // 初始顯示第一題
+        displayQuestion();
+    </script>
+</body>
+</html> 
