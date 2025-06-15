@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 import random
 from flask_dance.contrib.google import make_google_blueprint, google
 import os
+import gspread
+from google.oauth2.service_account import Credentials
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'supersecretkey')
@@ -18,27 +20,32 @@ google_bp = make_google_blueprint(
 )
 app.register_blueprint(google_bp, url_prefix="/login")
 
-# 解剖學題庫
-questions = [
-    {
-        "id": 1,
-        "question": "人體最大的器官是什麼？",
-        "options": ["心臟", "肝臟", "皮膚", "肺臟"],
-        "correct": "皮膚"
-    },
-    {
-        "id": 2,
-        "question": "人體有多少塊骨頭？",
-        "options": ["206塊", "186塊", "216塊", "196塊"],
-        "correct": "206塊"
-    },
-    {
-        "id": 3,
-        "question": "負責輸送氧氣的細胞是什麼？",
-        "options": ["白血球", "紅血球", "血小板", "淋巴球"],
-        "correct": "紅血球"
-    }
-]
+# Google Sheet 設定
+SHEET_ID = '1mKfdSTLMrqyLu2GW_Km5ErboyPgjcyJ4q9Mqn8DkwCE'
+SHEET_NAME = '題庫'  # 這裡改成你的工作表名稱
+SCOPES = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+CREDS_FILE = 'hypnotic-bounty-463007-n4-42afd732fc72.json'
+
+def get_questions_from_sheet():
+    creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
+    gc = gspread.authorize(creds)
+    sh = gc.open_by_key(SHEET_ID)
+    worksheet = sh.worksheet(SHEET_NAME)
+    rows = worksheet.get_all_values()
+    questions = []
+    header = rows[0]
+    for row in rows[1:]:
+        # 依照你的欄位順序：分類, 題目, 選項, 正確答案, 補充資料
+        category, question, options, correct, extra = row
+        option_list = [opt.strip() for opt in options.split(';')]
+        questions.append({
+            'category': category,
+            'question': question,
+            'options': option_list,
+            'correct': correct,
+            'extra': extra
+        })
+    return questions
 
 @app.route('/')
 def quiz():
@@ -47,6 +54,7 @@ def quiz():
         resp = google.get("/oauth2/v2/userinfo")
         if resp.ok:
             user = resp.json()
+    questions = get_questions_from_sheet()
     return render_template('quiz.html', questions=questions, user=user)
 
 @app.route('/login')
@@ -65,7 +73,7 @@ def check_answer():
     data = request.get_json()
     question_id = data.get('question_id')
     answer = data.get('answer')
-    question = next((q for q in questions if q['id'] == question_id), None)
+    question = next((q for q in get_questions_from_sheet() if q['id'] == question_id), None)
     if question and answer == question['correct']:
         return jsonify({"correct": True, "message": "答對了！"})
     return jsonify({"correct": False, "message": f"答錯了！正確答案是：{question['correct']}"})
