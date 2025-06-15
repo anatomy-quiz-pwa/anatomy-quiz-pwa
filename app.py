@@ -4,6 +4,10 @@ from flask_dance.contrib.google import make_google_blueprint, google
 import os
 import gspread
 from google.oauth2.service_account import Credentials
+import re
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'supersecretkey')
@@ -35,14 +39,16 @@ def get_questions_from_sheet():
     questions = []
     header = rows[0]
     for row in rows[1:]:
-        # 依照你的欄位順序：分類, 題目, 選項, 正確答案, 補充資料
-        category, question, options, correct, extra = row
-        option_list = [opt.strip() for opt in options.split(';')]
+        # 依照新欄位順序：分類, 題目, 選項1, 選項2, 選項3, 選項4, 正確答案, 補充資料
+        category, question, opt1, opt2, opt3, opt4, correct, extra = row
+        option_list = [opt1, opt2, opt3, opt4]
+        correct_index = int(correct.strip()) - 1  # 轉成 0-based index
         questions.append({
             'category': category,
             'question': question,
             'options': option_list,
-            'correct': correct,
+            'correct_index': correct_index,
+            'correct': option_list[correct_index] if 0 <= correct_index < len(option_list) else '',
             'extra': extra
         })
     return questions
