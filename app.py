@@ -24,7 +24,7 @@ app.register_blueprint(google_bp, url_prefix="/login")
 SHEET_ID = '1mKfdSTLMrqyLu2GW_Km5ErboyPgjcyJ4q9Mqn8DkwCE'
 SHEET_NAME = '題庫'  # 這裡改成你的工作表名稱
 SCOPES = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-CREDS_FILE = 'hypnotic-bounty-463007-n4-42afd732fc72.json'
+CREDS_FILE = '/etc/secrets/hypnotic-bounty-463007-n4-42afd732fc72.json'
 
 def get_questions_from_sheet():
     creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
