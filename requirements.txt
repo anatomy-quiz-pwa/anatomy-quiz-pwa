@@ -1,13 +1,2 @@
 Flask==2.0.1
-Flask-Dance==5.1.0
-requests
-gspread==5.1.1
-google-auth==2.3.3
-Pillow==9.0.0
-pytesseract==0.3.8
-pillow-heif>=0.13.0
-openai==0.27.0
-notion-client==1.0.0
-line-bot-sdk==2.4.0
-schedule==1.1.0
-python-dotenv==0.19.2 
+line-bot-sdk==2.4.0 
