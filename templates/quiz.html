@@ -99,17 +99,24 @@
     <div class="quiz-container">
         <h1>What's up Anatomy × 解剖力累積</h1>
         <div id="days-streak" style="text-align:center; color:#2196f3; font-weight:bold; margin-bottom:20px;"></div>
+        <div id="question-category" style="text-align:center; color:#888; margin-bottom:10px;"></div>
         <div id="question-container">
             <div class="question" id="question-text"></div>
             <div class="options" id="options-container"></div>
         </div>
         <div id="feedback" class="feedback"></div>
+        <div id="extra-info" style="display:none; margin-top:10px; color:#555; background:#f7efe2; border-radius:6px; padding:10px;"></div>
         <button id="next-btn" class="next-btn">下一題</button>
     </div>
 
     <script>
         let currentQuestionIndex = 0;
         const questions = {{ questions|tojson|safe }};
+        // 新增：將 user_id 直接從 Jinja2 傳給 JS，若無則用 localStorage 或 guest
+        let user_id = '{{ user.email if user else '' }}';
+        if (!user_id) {
+            user_id = localStorage.getItem('anatomy_user_id') || 'guest';
+        }
 
         // 累積天數計算
         function getTodayStr() {
@@ -127,45 +134,81 @@
 
         function displayQuestion() {
             const question = questions[currentQuestionIndex];
+            document.getElementById('question-category').textContent = question.category;
             document.getElementById('question-text').textContent = question.question;
-            
             const optionsContainer = document.getElementById('options-container');
             optionsContainer.innerHTML = '';
-            
-            question.options.forEach(option => {
-                const button = document.createElement('div');
+            question.options.forEach((option, idx) => {
+                const button = document.createElement('button');
                 button.className = 'option';
-                button.textContent = option;
-                button.onclick = () => checkAnswer(option);
+                button.textContent = option.trim();
+                button.onclick = () => checkAnswer(idx);
                 optionsContainer.appendChild(button);
             });
-
             document.getElementById('feedback').style.display = 'none';
+            document.getElementById('extra-info').style.display = 'none';
             document.getElementById('next-btn').style.display = 'none';
         }
 
-        function checkAnswer(selectedAnswer) {
+        function checkAnswer(selectedIdx) {
             const question = questions[currentQuestionIndex];
             const feedback = document.getElementById('feedback');
             const options = document.querySelectorAll('.option');
-            
-            options.forEach(option => {
-                option.onclick = null;
-                if (option.textContent === question.correct) {
+            options.forEach((option, idx) => {
+                option.disabled = true;
+                if (idx === question.correct_index) {
                     option.style.backgroundColor = '#c8e6c9';
                 }
+                if (idx === selectedIdx && idx !== question.correct_index) {
+                    option.style.backgroundColor = '#ffcdd2';
+                }
             });
-
-            if (selectedAnswer === question.correct) {
+            if (selectedIdx === question.correct_index) {
                 feedback.className = 'feedback correct';
                 feedback.textContent = '答對了！';
             } else {
                 feedback.className = 'feedback incorrect';
                 feedback.textContent = `答錯了！正確答案是：${question.correct}`;
             }
-
             feedback.style.display = 'block';
+            // 顯示補充資料
+            const extraInfo = document.getElementById('extra-info');
+            extraInfo.textContent = question.extra;
+            extraInfo.style.display = question.extra ? 'block' : 'none';
             document.getElementById('next-btn').style.display = 'block';
+
+            // ====== 新增：寫入學生行為紀錄 ======
+            // session_id 可用 localStorage 或隨機字串
+            let session_id = localStorage.getItem('anatomy_session_id');
+            if (!session_id) {
+                session_id = 'sess_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('anatomy_session_id', session_id);
+            }
+            // streak_days 來自 streak 變數
+            let streak_days = streak.days;
+            // 記錄作答時間（這裡簡化為 0，進階可記錄開始/結束時間）
+            let time_spent = 0;
+            // retry_count、reaction_after 可根據需求擴充
+            fetch('/api/log_answer', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: user_id,
+                    question_id: currentQuestionIndex + 1, // 或用題庫 id
+                    answer_given: selectedIdx + 1,
+                    is_correct: selectedIdx === question.correct_index,
+                    timestamp: new Date().toISOString(),
+                    time_spent: time_spent,
+                    question_topic: question.category,
+                    question_difficulty: '', // 目前題庫無難度欄位
+                    quiz_mode: '單題',
+                    session_id: session_id,
+                    streak_days: streak_days,
+                    reaction_after: '',
+                    retry_count: 0
+                })
+            });
+            // ====== END ======
         }
 
         document.getElementById('next-btn').onclick = () => {
