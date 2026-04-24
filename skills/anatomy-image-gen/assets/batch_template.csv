@@ -1,0 +1,7 @@
+reference_image,mode,description,output_name
+./refs/gait_swing.jpg,skeleton,跑步擺盪期側面骨架,gait_01_skeleton
+./refs/gait_swing.jpg,muscle,跑步擺盪期髖屈肌群,gait_01_muscle
+./refs/gait_swing.jpg,realistic,跑步擺盪期真人示範,gait_01_demo
+./refs/squat_bottom.jpg,skeleton,深蹲最低點側面骨架,squat_01_skeleton
+./refs/squat_bottom.jpg,muscle,深蹲最低點股四頭肌,squat_01_muscle
+./refs/deadlift_start.jpg,realistic,硬舉起始位側面,deadlift_demo
