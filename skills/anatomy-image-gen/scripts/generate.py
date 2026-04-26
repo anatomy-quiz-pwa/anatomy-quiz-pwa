@@ -28,17 +28,7 @@ if str(_HERE) not in sys.path:
 
 import prompt_builder  # noqa: E402
 import replicate_client  # noqa: E402
-
-try:
-    from replicate_models import get_model_slug  # local module
-except ImportError:
-    # Fallback if references/ moved — keep the script self-contained.
-    def get_model_slug(mode: str) -> str:
-        return {
-            "skeleton": "jagilley/controlnet-pose",
-            "muscle": "stability-ai/sdxl",
-            "realistic": "black-forest-labs/flux-dev",
-        }[mode]
+import replicate_models  # noqa: E402
 
 
 SUPPORTED_EXT = {".jpg", ".jpeg", ".png", ".webp"}
@@ -61,27 +51,27 @@ def _validate_reference(path: Path) -> None:
 
 
 def _model_inputs(
-    mode: str,
+    slug: str,
     reference_image: Path,
     positive: str,
     negative: str,
     seed: int | None,
 ) -> dict[str, Any]:
-    """Shape inputs to match each model's API.
+    """Shape inputs to match the chosen model's accepted schema.
 
-    Kept here (not in replicate_client) because the input schema is
-    model-specific and we may swap models.
+    Delegates to replicate_models.build_inputs so the per-family schema
+    knowledge stays in one place.
     """
-    image_uri = _image_to_data_uri(reference_image)
-    base: dict[str, Any] = {
-        "prompt": positive,
-        "negative_prompt": negative,
-        "image": image_uri,
-    }
-    if seed is not None:
-        base["seed"] = seed
-    # Modes currently share schema; this hook makes per-model tweaks easy.
-    return base
+    image_uri: str | None = None
+    if replicate_models.accepts_reference_image(slug):
+        image_uri = _image_to_data_uri(reference_image)
+    return replicate_models.build_inputs(
+        slug=slug,
+        positive=positive,
+        negative=negative,
+        reference_image_data_uri=image_uri,
+        seed=seed,
+    )
 
 
 def _image_to_data_uri(path: Path) -> str:
@@ -127,7 +117,7 @@ def generate_anatomy_image(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     positive, negative = prompt_builder.build_prompt(chinese_description, mode)
-    model = get_model_slug(mode)
+    model = replicate_models.get_model_slug(mode)
 
     if dry_run is None:
         dry_run = not replicate_client.is_available()
@@ -153,7 +143,7 @@ def generate_anatomy_image(
     if dry_run:
         return result
 
-    inputs = _model_inputs(mode, ref, positive, negative, seed)
+    inputs = _model_inputs(model, ref, positive, negative, seed)
     urls = replicate_client.run(model, inputs)
     if not urls:
         raise RuntimeError("Replicate returned no output URLs.")

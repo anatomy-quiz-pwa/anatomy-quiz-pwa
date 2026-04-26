@@ -5,13 +5,22 @@
 
 -----
 
-## 目前預設（2026-04-24）
+## 目前預設（2026-04-26 更新）
 
 | 模式 | Replicate 模型 | 為何選它 |
 |------|----------------|----------|
-| `skeleton` | `jagilley/controlnet-pose` | OpenPose ControlNet，最直接把參考照的姿勢轉成火柴人。預設輸出就是線條圖，不需要額外 negative prompt 太多加工。 |
-| `muscle` | `stability-ai/sdxl` | SDXL 底模配合 ControlNet OpenPose，prompt 寫「medical illustration + anatomical accuracy」能產出教科書風格。未來可以換成帶 anatomy LoRA 的衍生模型。 |
-| `realistic` | `black-forest-labs/flux-dev` | Flux 在寫實人體比 SDXL 穩。配合參考照可維持動作，背景乾淨。 |
+| `skeleton` | `black-forest-labs/flux-schnell` | Flux schnell 是目前 Replicate 最便宜（~$0.003/張）且最穩定還在維護的 text-to-image 模型。簡化線條/骨架可以靠 prompt 控制。**目前無 ControlNet 姿勢控制**。 |
+| `muscle` | `black-forest-labs/flux-schnell` | 同上。教材插圖風格透過 prompt 加 `medical illustration` 等關鍵字達成。 |
+| `realistic` | `black-forest-labs/flux-dev` | Flux dev 在寫實人體比 schnell 強，貴一點但值得（~$0.025/張）。 |
+
+### 2026-04-26 變更紀錄
+
+`stability-ai/sdxl` 與 `jagilley/controlnet-pose` 已從 Replicate 預設可呼叫名單下架（`replicate.run()` 回 404）。先切到 Flux 系列確保 pipeline 跑得起來。**代價：失去從參考照抓姿勢的 ControlNet 功能**——目前所有模式都是純 text-to-image。
+
+下次優先補：找一個 2026 仍在維護的 ControlNet OpenPose 模型，把姿勢控制加回來。候選查找路徑：
+- https://replicate.com/explore → ControlNet 標籤
+- 看 stars / 最近 push 時間
+- 確認 input schema 有 `image` 欄位
 
 -----
 
