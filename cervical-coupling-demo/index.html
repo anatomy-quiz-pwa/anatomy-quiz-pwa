@@ -419,108 +419,245 @@ function makeFacet(color, w = 0.9, d = 0.9, h = 0.18) {
   return m;
 }
 
-// C0 occiput: flat trapezoid (wide top, narrower bottom) + 2 condyles underneath
+/* --- shared anatomical helpers --- */
+function makeBody(w, h, d) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 28, 18), mat(COL.bone));
+  m.scale.set(w, h * 2, d);
+  return m;
+}
+function makePedicle(side) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.55, 12), mat(COL.bone));
+  m.rotation.x = Math.PI / 2;
+  m.position.set(side * 0.5, 0.05, -0.1);
+  return m;
+}
+function makeLamina() {
+  const m = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.1, 8, 18, Math.PI), mat(COL.bone));
+  m.rotation.x = Math.PI / 2;
+  m.rotation.z = Math.PI;
+  m.position.set(0, 0.05, -0.5);
+  return m;
+}
+function makeSpinous(length, bifid) {
+  const g = new THREE.Group();
+  const offsets = bifid ? [0.13, -0.13] : [0];
+  for (const sx of offsets) {
+    const cyl = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.11, length, 10),
+      mat(COL.bone)
+    );
+    cyl.position.set(sx, -length * 0.35, 0);
+    g.add(cyl);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), mat(COL.bone));
+    tip.position.set(sx, -length * 0.7, 0);
+    g.add(tip);
+  }
+  return g;
+}
+function makeTransverse(length, side) {
+  const g = new THREE.Group();
+  const main = new THREE.Mesh(
+    new THREE.BoxGeometry(length * 0.6, 0.26, 0.45),
+    mat(COL.bone)
+  );
+  main.position.x = side * length * 0.3;
+  g.add(main);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), mat(COL.bone));
+  tip.position.set(side * length * 0.6, 0, 0.05);
+  tip.scale.set(0.9, 0.6, 0.9);
+  g.add(tip);
+  // Foramen suggestion (small dark dot)
+  const fmn = new THREE.Mesh(
+    new THREE.CircleGeometry(0.07, 14),
+    new THREE.MeshBasicMaterial({ color: 0x1a1a2e, side: THREE.DoubleSide })
+  );
+  fmn.rotation.x = -Math.PI / 2;
+  fmn.position.set(side * length * 0.3, 0.135, 0);
+  g.add(fmn);
+  return g;
+}
+function makePillar(side, facetTilt) {
+  const p = new THREE.Group();
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.55, 0.55), mat(COL.bone));
+  p.add(base);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.55), mat(COL.bone));
+  top.position.set(0, 0.32, 0);
+  top.rotation.x = -facetTilt + Math.PI / 4;
+  p.add(top);
+  const bot = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.55), mat(COL.bone));
+  bot.position.set(0, -0.32, 0);
+  bot.rotation.x = -facetTilt + Math.PI / 4;
+  p.add(bot);
+  p.position.x = side * 0.7;
+  p.userData.topFacet = top;
+  p.userData.botFacet = bot;
+  return p;
+}
+
+// C0 occiput: dome + foramen magnum + condyles + inion + mastoids
 function buildC0() {
   const g = new THREE.Group();
   g.name = 'C0';
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(3.4, 0.9, 2.6),
-    mat(COL.bone)
-  );
-  body.position.y = 0.45;
-  g.add(body);
-  // dome on top
   const dome = new THREE.Mesh(
-    new THREE.SphereGeometry(1.5, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.SphereGeometry(2.0, 32, 24, 0, Math.PI * 2, 0, Math.PI * 0.55),
     mat(COL.bone)
   );
-  dome.position.y = 0.9;
-  dome.scale.set(1.0, 0.7, 0.85);
+  dome.scale.set(1.05, 0.85, 1.0);
+  dome.position.set(0, -0.05, 0.05);
   g.add(dome);
-  // condyles (left & right)
-  const condyleGeo = new THREE.SphereGeometry(0.45, 20, 14);
-  const lc = new THREE.Mesh(condyleGeo, mat(COL.bone));
-  lc.position.set(0.85, -0.05, 0);
-  lc.scale.set(1, 0.55, 1.4);
-  g.add(lc);
-  const rc = new THREE.Mesh(condyleGeo, mat(COL.bone));
-  rc.position.set(-0.85, -0.05, 0);
-  rc.scale.set(1, 0.55, 1.4);
-  g.add(rc);
-  g.userData.leftFacet = lc;
-  g.userData.rightFacet = rc;
+  // External occipital protuberance (inion)
+  const inion = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 10), mat(COL.bone));
+  inion.position.set(0, 0.55, -1.7);
+  inion.scale.set(1.2, 0.7, 0.7);
+  g.add(inion);
+  // Mastoid processes
+  for (const side of [1, -1]) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.35, 14, 10), mat(COL.bone));
+    m.position.set(side * 1.7, -0.4, -0.5);
+    m.scale.set(0.8, 1.15, 0.85);
+    g.add(m);
+  }
+  // Foramen magnum rim
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.65, 0.13, 10, 28), mat(COL.bone));
+  ring.rotation.x = Math.PI / 2;
+  ring.position.set(0, -0.4, 0);
+  g.add(ring);
+  const hole = new THREE.Mesh(
+    new THREE.CircleGeometry(0.55, 28),
+    new THREE.MeshBasicMaterial({ color: 0x0f1020, side: THREE.DoubleSide })
+  );
+  hole.rotation.x = -Math.PI / 2;
+  hole.position.set(0, -0.39, 0);
+  g.add(hole);
+  // Occipital condyles (left & right)
+  for (const side of [1, -1]) {
+    const c = new THREE.Mesh(new THREE.SphereGeometry(0.4, 20, 14), mat(COL.bone));
+    c.position.set(side * 0.85, -0.5, 0.05);
+    c.scale.set(0.85, 0.55, 1.45);
+    g.add(c);
+    if (side === 1) g.userData.leftFacet = c;
+    else g.userData.rightFacet = c;
+  }
   return g;
 }
 
-// C1 atlas: ring with two superior cup facets
+// C1 atlas: anterior + posterior arches, lateral masses with sup/inf facets, transverses
 function buildC1() {
   const g = new THREE.Group();
   g.name = 'C1';
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(1.2, 0.35, 14, 36),
+  // Posterior arch (large half-torus going around the back)
+  const post = new THREE.Mesh(
+    new THREE.TorusGeometry(0.95, 0.12, 10, 26, Math.PI),
     mat(COL.bone)
   );
-  ring.rotation.x = Math.PI / 2;
-  ring.scale.set(1.1, 1.0, 0.65);
-  g.add(ring);
-  // superior facets (cup shape, simplified as flattened spheres)
-  const cup = new THREE.SphereGeometry(0.45, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2);
-  const lf = new THREE.Mesh(cup, mat(COL.bone));
-  lf.position.set(0.85, 0.18, 0);
-  lf.scale.set(1, 0.4, 1.4);
-  lf.rotation.x = Math.PI;
-  g.add(lf);
-  const rf = new THREE.Mesh(cup, mat(COL.bone));
-  rf.position.set(-0.85, 0.18, 0);
-  rf.scale.set(1, 0.4, 1.4);
-  rf.rotation.x = Math.PI;
-  g.add(rf);
-  g.userData.leftFacet = lf;
-  g.userData.rightFacet = rf;
+  post.rotation.x = Math.PI / 2;
+  post.rotation.z = Math.PI;
+  post.position.set(0, 0, -0.1);
+  g.add(post);
+  // Posterior tubercle (small bump on back)
+  const postT = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), mat(COL.bone));
+  postT.position.set(0, 0, -1.05);
+  g.add(postT);
+  // Anterior arch (smaller)
+  const ant = new THREE.Mesh(
+    new THREE.TorusGeometry(0.85, 0.1, 8, 22, Math.PI * 0.6),
+    mat(COL.bone)
+  );
+  ant.rotation.x = Math.PI / 2;
+  ant.rotation.z = Math.PI / 2 - Math.PI * 0.3;
+  ant.position.set(0, 0, 0.35);
+  g.add(ant);
+  // Anterior tubercle
+  const antT = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), mat(COL.bone));
+  antT.position.set(0, 0, 1.05);
+  antT.scale.set(1, 0.75, 1.2);
+  g.add(antT);
+  // Lateral masses + facets
+  for (const side of [1, -1]) {
+    const mass = new THREE.Group();
+    const box = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.5, 1.1), mat(COL.bone));
+    mass.add(box);
+    const sup = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.09, 1.1), mat(COL.bone));
+    sup.position.set(0, 0.28, 0);
+    sup.rotation.x = side * Math.PI * 0.04;
+    mass.add(sup);
+    const inf = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.09, 1.1), mat(COL.bone));
+    inf.position.set(0, -0.28, 0);
+    mass.add(inf);
+    mass.position.set(side * 1.05, 0, 0.15);
+    g.add(mass);
+    if (side === 1) g.userData.leftFacet = sup;
+    else g.userData.rightFacet = sup;
+  }
+  // Transverse processes (long, lateral)
+  for (const side of [1, -1]) {
+    const tp = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 10), mat(COL.bone));
+    tp.scale.set(1.45, 0.55, 0.85);
+    tp.position.set(side * 1.85, 0, 0.05);
+    g.add(tp);
+  }
   return g;
 }
 
-// Typical cervical vertebra (C2..C7): vertebral body + two angled facet ramps
-// facetTilt is the angle (radians) of the superior facet from horizontal.
-function buildTypical(facetTilt = Math.PI / 4, accent = false) {
+// Typical cervical (C3-C6): body + pedicles + lamina + bifid spinous + transverses + facet pillars
+function buildTypical(opts = {}) {
+  const { facetTilt = Math.PI / 4, bifidSpinous = true,
+          bodyW = 1.5, bodyH = 0.5, bodyD = 1.0,
+          spinousLen = 0.85, transverseLen = 0.7 } = opts;
   const g = new THREE.Group();
-  const bodyColor = accent ? COL.highlight2 : COL.bone;
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(2.2, 0.85, 1.8),
-    mat(bodyColor)
-  );
+  // Body (anterior)
+  const body = makeBody(bodyW, bodyH, bodyD);
+  body.position.set(0, 0, 0.45);
   g.add(body);
-  // facet pillars (left & right) — ramps tilted along sagittal plane
-  function pillar(side) {
-    const p = new THREE.Group();
-    const pillarBase = new THREE.Mesh(
-      new THREE.BoxGeometry(0.7, 0.7, 1.4),
-      mat(bodyColor)
-    );
-    pillarBase.position.set(0, 0.05, -0.05);
-    p.add(pillarBase);
-    // top facet (sloped surface)
-    const topFacet = makeFacet(COL.bone, 0.7, 1.2, 0.16);
-    topFacet.position.set(0, 0.5, 0);
-    topFacet.rotation.x = -facetTilt + Math.PI / 4; // 0 = horizontal-ish; tilt forward
-    p.add(topFacet);
-    // bottom facet
-    const botFacet = makeFacet(COL.bone, 0.7, 1.2, 0.16);
-    botFacet.position.set(0, -0.4, 0);
-    botFacet.rotation.x = -facetTilt + Math.PI / 4;
-    p.add(botFacet);
-    p.position.x = side * 1.35;
-    p.userData.topFacet = topFacet;
-    p.userData.botFacet = botFacet;
-    return p;
-  }
-  const lp = pillar(1);
-  const rp = pillar(-1);
+  g.add(makePedicle(1));
+  g.add(makePedicle(-1));
+  g.add(makeLamina());
+  // Spinous process
+  const sp = makeSpinous(spinousLen, bifidSpinous);
+  sp.position.set(0, -0.05, -0.85);
+  sp.rotation.x = -Math.PI / 5;
+  g.add(sp);
+  // Transverse processes
+  const tpL = makeTransverse(transverseLen, 1);
+  tpL.position.set(0.1, 0, 0.05);
+  g.add(tpL);
+  const tpR = makeTransverse(transverseLen, -1);
+  tpR.position.set(-0.1, 0, 0.05);
+  g.add(tpR);
+  // Articular pillars
+  const lp = makePillar(1, facetTilt);
+  const rp = makePillar(-1, facetTilt);
   g.add(lp); g.add(rp);
   g.userData.leftFacet = lp.userData.topFacet;
   g.userData.rightFacet = rp.userData.topFacet;
-  g.userData.leftPillar = lp;
-  g.userData.rightPillar = rp;
+  return g;
+}
+
+// C2 axis: typical body + bifid spinous + dens (odontoid peg)
+function buildC2() {
+  const g = buildTypical({ facetTilt: Math.PI / 4, bifidSpinous: true, bodyD: 1.05 });
+  const dens = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.16, 0.2, 0.95, 14),
+    mat(COL.bone)
+  );
+  dens.position.set(0, 0.55, 0.3);
+  g.add(dens);
+  const densTip = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), mat(COL.bone));
+  densTip.position.set(0, 1.05, 0.3);
+  g.add(densTip);
+  return g;
+}
+
+// C7 vertebra prominens: long single (non-bifid) spinous
+function buildC7() {
+  return buildTypical({ facetTilt: Math.PI / 4, bifidSpinous: false, spinousLen: 1.3 });
+}
+
+// T1: bigger body, lower facet angle, long spinous
+function buildT1() {
+  const g = buildTypical({ facetTilt: Math.PI / 3, bifidSpinous: false,
+                            bodyW: 1.7, bodyH: 0.6, bodyD: 1.1, spinousLen: 1.2 });
+  g.scale.set(1.08, 1, 1.05);
   return g;
 }
 
@@ -542,28 +679,15 @@ function buildSpine(highlightLevel) {
     let mesh;
     if (name === 'C0') mesh = buildC0();
     else if (name === 'C1') mesh = buildC1();
-    else if (name === 'C2') {
-      mesh = buildTypical(Math.PI/4, false);
-      // C2 has odontoid — small peg
-      const peg = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.7, 16), mat(COL.bone));
-      peg.position.y = 0.6;
-      mesh.add(peg);
-    } else if (name === 'T1') {
-      mesh = buildTypical(Math.PI/3, false);
-      mesh.scale.set(1.15,1,1.1);
-    } else {
-      mesh = buildTypical(Math.PI/4, false);
-    }
+    else if (name === 'C2') mesh = buildC2();
+    else if (name === 'C7') mesh = buildC7();
+    else if (name === 'T1') mesh = buildT1();
+    else mesh = buildTypical({ facetTilt: Math.PI / 4, bifidSpinous: true });
     mesh.position.y = yCursor + heights[name]/2;
     parent.add(mesh);
     segments[name] = mesh;
-    // next vertebra is parented to this one so head rotation cascades
     yCursor += heights[name];
-    parent = mesh; // stack as nested children → rotating C2 rotates head above it
-    // But we want each piece to occupy its own absolute Y space; nesting requires
-    // we adjust: child position should be relative to parent. Since heights are
-    // similar, we offset child by parent's half-height. We'll fix below by NOT
-    // nesting and instead grouping "head above joint" dynamically.
+    parent = mesh;
   }
 
   // Re-do with flat hierarchy under root, then build "headGroups" we can rotate.
