@@ -30,6 +30,21 @@
   .ctrl-btn.primary { background:#4ecdc4; color:#0f1020; font-weight:700; border-color:#4ecdc4; }
   .ctrl-btn.danger { background:#ff6b6b; color:#fff; border-color:#ff6b6b; }
   .lang-toggle { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); padding:4px 10px; border-radius:6px; font-size:12px; cursor:pointer; }
+  .lit-toggle { display:inline-flex; align-items:center; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:8px; overflow:hidden; }
+  .lit-toggle .lit-label { padding:4px 10px; font-size:11px; color:#ffe66d; border-right:1px solid rgba(255,255,255,0.12); letter-spacing:1px; }
+  .lit-toggle button { padding:6px 12px; font-size:12px; background:transparent; color:#f5f5dc; border:none; cursor:pointer; transition: all .15s; }
+  .lit-toggle button.active { background:#ffe66d; color:#0f1020; font-weight:700; }
+  .lit-toggle button:not(.active):hover { background:rgba(255,230,109,0.15); }
+  .info-btn { width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#ffe66d; cursor:pointer; font-size:13px; font-weight:700; }
+  .info-modal { position:fixed; inset:0; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; z-index:50; backdrop-filter: blur(4px); }
+  .info-modal.show { display:flex; }
+  .info-modal .panel { background:#1a1a2e; border:1px solid rgba(255,230,109,0.35); border-radius:12px; padding:24px 28px; max-width:640px; width:92%; max-height:80vh; overflow:auto; }
+  .info-modal h2 { color:#ffe66d; font-weight:700; margin-bottom:10px; }
+  .info-modal h3 { color:#4ecdc4; font-weight:700; margin-top:14px; margin-bottom:6px; font-size:14px; }
+  .info-modal p { font-size:13px; line-height:1.7; color:#f5f5dc; opacity:0.92; }
+  .info-modal .close-x { float:right; cursor:pointer; opacity:0.6; font-size:18px; }
+  .lit-banner { position:fixed; top:60px; left:50%; transform:translateX(-50%); background:#ffe66d; color:#0f1020; padding:6px 14px; border-radius:999px; font-size:12px; font-weight:700; opacity:0; transition: opacity .3s; z-index:40; pointer-events:none; }
+  .lit-banner.show { opacity:1; }
   .summary-table { font-size:13px; }
   .summary-table th, .summary-table td { padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.1); text-align:left; }
   .summary-table th { color:#4ecdc4; }
@@ -45,10 +60,29 @@
     <span data-i18n="title">右側卡在伸直 — C0-C1 vs C3-C4 推理對照</span>
   </h1>
   <div class="flex items-center gap-3">
+    <div class="lit-toggle" id="litToggle">
+      <span class="lit-label" data-i18n="litLabel">文獻版本</span>
+      <button data-lit="osteo" class="active" data-i18n="litOsteo">臨床 / Osteopathic</button>
+      <button data-lit="bogduk" data-i18n="litBogduk">Bogduk &amp; Mercer 2000</button>
+    </div>
+    <button class="info-btn" id="infoBtn" title="differences">i</button>
     <button class="lang-toggle" id="langToggle">EN</button>
     <span class="text-xs text-white/50" data-i18n="brand">What's Up Anatomy</span>
   </div>
 </header>
+<div class="lit-banner" id="litBanner"></div>
+<div class="info-modal" id="infoModal">
+  <div class="panel">
+    <span class="close-x" id="infoClose">×</span>
+    <h2 data-i18n="infoTitle">兩個文獻版本的差異</h2>
+    <h3 data-i18n="infoOsteoH">臨床 / Osteopathic（Fryette / Mitchell）</h3>
+    <p data-i18n="infoOsteoP">傳統手療教學系統。C0-C2 視為同側耦合（SB ⇒ Rotation 同側），C2-C7 視為對側耦合（SB ⇒ Rotation 對側）。許多 manual therapy 教科書沿用此規則做動作測試與治療設計。</p>
+    <h3 data-i18n="infoBogdukH">Bogduk &amp; Mercer 2000 (Clin Biomech)</h3>
+    <p data-i18n="infoBogdukP">系統性回顧 in vivo（CT、MRI、雙平面 X 光）與屍體生物力學研究。結論：C0-C1 耦合方向變異大、量級小；C1-C2 因 lateral mass 幾何呈現對側耦合；<b>C2-C7 為同側耦合</b>，由 facet 45° 斜面與 uncovertebral 幾何共同決定。此版本與多數 in vivo 文獻（Penning, Lysell, Mimura）一致。</p>
+    <h3 data-i18n="infoUseH">怎麼用？</h3>
+    <p data-i18n="infoUseP">同一個「右側卡在伸直」的臨床情境，兩個版本會推導出 C3-C4 旋轉方向相反的結論。切換版本看動畫如何變化，幫助學生理解：耦合規則是<b>模型假設</b>，不是定律——選擇哪個版本影響你的臨床推理。</p>
+  </div>
+</div>
 
 <main class="flex-1 grid grid-cols-2 gap-1 bg-white/5">
   <!-- Left: C0-C1 ipsilateral -->
@@ -154,7 +188,19 @@ const i18n = {
       "右側彎 + 左旋轉 + Extension 容易"
     ],
     leftRule: "C0-C2 · 同側耦合<br/>SB Right ⇒ Rotation Right",
-    rightRule: "C2-C7 · 對側耦合<br/>SB Right ⇒ Rotation Left"
+    rightRule: "C2-C7 · 對側耦合<br/>SB Right ⇒ Rotation Left",
+    litLabel: "文獻版本",
+    litOsteo: "臨床 / Osteopathic",
+    litBogduk: "Bogduk &amp; Mercer 2000",
+    litBannerOsteo: "切換為：臨床 / Osteopathic 模型",
+    litBannerBogduk: "切換為：Bogduk &amp; Mercer 2000（in vivo 證據）",
+    infoTitle: "兩個文獻版本的差異",
+    infoOsteoH: "臨床 / Osteopathic（Fryette / Mitchell）",
+    infoOsteoP: "傳統手療教學系統。C0-C2 視為同側耦合（SB ⇒ Rotation 同側），C2-C7 視為對側耦合（SB ⇒ Rotation 對側）。許多 manual therapy 教科書沿用此規則做動作測試與治療設計。",
+    infoBogdukH: "Bogduk &amp; Mercer 2000 (Clin Biomech)",
+    infoBogdukP: "系統性回顧 in vivo（CT、MRI、雙平面 X 光）與屍體生物力學研究。結論：C0-C1 耦合方向變異大、量級小；C1-C2 因 lateral mass 幾何呈現對側耦合；<b>C2-C7 為同側耦合</b>，由 facet 45° 斜面與 uncovertebral 幾何共同決定。此版本與多數 in vivo 文獻（Penning, Lysell, Mimura）一致。",
+    infoUseH: "怎麼用？",
+    infoUseP: "同一個「右側卡在伸直」的臨床情境，兩個版本會推導出 C3-C4 旋轉方向相反的結論。切換版本看動畫如何變化，幫助學生理解：耦合規則是<b>模型假設</b>，不是定律——選擇哪個版本影響你的臨床推理。"
   },
   'en': {
     title: "Right side stuck in extension — C0-C1 vs C3-C4",
@@ -193,21 +239,156 @@ const i18n = {
       "Right SB + Left rotation + extension is the easy combo"
     ],
     leftRule: "C0-C2 · Ipsilateral<br/>SB Right ⇒ Rotation Right",
-    rightRule: "C2-C7 · Contralateral<br/>SB Right ⇒ Rotation Left"
+    rightRule: "C2-C7 · Contralateral<br/>SB Right ⇒ Rotation Left",
+    litLabel: "Source",
+    litOsteo: "Clinical / Osteopathic",
+    litBogduk: "Bogduk &amp; Mercer 2000",
+    litBannerOsteo: "Switched: Clinical / Osteopathic model",
+    litBannerBogduk: "Switched: Bogduk &amp; Mercer 2000 (in vivo)",
+    infoTitle: "Two literature frameworks",
+    infoOsteoH: "Clinical / Osteopathic (Fryette / Mitchell)",
+    infoOsteoP: "Traditional manual-therapy framework. C0-C2 treated as ipsilateral coupling (SB ⇒ same-side rotation); C2-C7 as contralateral (SB ⇒ opposite-side rotation). Widely taught in manual therapy textbooks for motion testing and treatment design.",
+    infoBogdukH: "Bogduk &amp; Mercer 2000 (Clin Biomech)",
+    infoBogdukP: "Systematic review of in vivo (CT, MRI, biplanar X-ray) and cadaveric biomechanics studies. Conclusions: C0-C1 coupling direction is variable and small in magnitude; C1-C2 is contralateral due to lateral-mass geometry; <b>C2-C7 is ipsilateral</b>, driven by 45° facet inclination plus uncovertebral geometry. Consistent with most in vivo studies (Penning, Lysell, Mimura).",
+    infoUseH: "How to use",
+    infoUseP: "For the same 'right stuck in extension' clinical scenario, the two frameworks conclude opposite C3-C4 rotation directions. Toggling between versions helps students see that coupling rules are <b>model assumptions</b>, not laws — and the choice shapes clinical reasoning."
   }
 };
 let currentLang = 'zh-TW';
 
+/* === literature versions ===
+   Each version overrides a subset of i18n keys per language and supplies the
+   C3-C4 rotation direction used in Step 5 ('R' = right rotation = ipsilateral
+   with right SB; 'L' = left rotation = contralateral).
+*/
+const litVersions = {
+  osteo: {
+    c34RotDir: 'L',
+    overrides: {
+      'zh-TW': {
+        rightLabel: "C3-C4 · 對側耦合",
+        rightRule: "C2-C7 · 對側耦合<br/>SB Right ⇒ Rotation Left",
+        contraRule: "對側 (contralateral)",
+        contraEasy: "Extension + 右側彎 + 左旋轉",
+        rightAnno: [
+          "C3-C4：facet 沿 45° 斜面（上前 ↔ 下後）",
+          "Extension：右 facet 應下後滑、左 facet 應上前滑",
+          "右側 facet 卡在前上 → up-and-forward 位置 → down-and-back 受限",
+          "Flexion 需要兩側 facet 上前滑；右側不動 → 頭往左偏",
+          "C2-C7 對側耦合：SB Right ⇒ Rotation Left",
+          "右側彎 + 左旋轉 + Extension 容易"
+        ],
+        desc: [
+          "中立位。注意 C0-C1 的 condyle 在 C1 上面是水平前後滑動；C3-C4 的 facet 是沿著 45 度斜面上下滑動。",
+          "病人容易做 extension：兩邊頭部後仰，但左右的滑動方向不同（黃箭頭）。",
+          "在 extension 位觸診 → 右側卡在前。提醒：『卡在前』是 relative position，不是動作方向。",
+          "右側卡在前 → 無法後滑 → flexion 受限。嘗試低頭時頭會往左偏。",
+          "Coupling rule 在此分歧：C0-C2 同側耦合；C2-C7 對側耦合（osteopathic 教學）。",
+          "結論：兩者都伴隨右側彎，但旋轉方向相反（osteopathic 模型）。"
+        ]
+      },
+      en: {
+        rightLabel: "C3-C4 · Contralateral coupling",
+        rightRule: "C2-C7 · Contralateral<br/>SB Right ⇒ Rotation Left",
+        contraRule: "Contralateral",
+        contraEasy: "Extension + Right SB + Left Rotation",
+        rightAnno: [
+          "C3-C4: facet rides a 45° slope (up-fwd ↔ down-back)",
+          "Extension: right facet glides down-back, left up-fwd",
+          "Right facet stuck up-and-forward → down-and-back blocked",
+          "Flexion needs both facets to glide up-fwd; right won't → head tilts left",
+          "C2-C7 contralateral: SB Right ⇒ Rotation Left",
+          "Right SB + Left rotation + extension is the easy combo"
+        ],
+        desc: [
+          "Neutral. C0-C1 condyles glide horizontally on C1; C3-C4 facets glide along 45° oblique planes.",
+          "Patient extends easily — both heads tilt back, but the glide directions differ (yellow arrows).",
+          "Palpate in extension → right side sits anterior. 'Anterior' is a relative position, not a direction of motion.",
+          "Right stuck anterior → can't glide back → flexion restricted. Head deviates left when trying to flex.",
+          "Coupling rules diverge: C0-C2 ipsilateral; C2-C7 contralateral (osteopathic).",
+          "Both involve right sidebending, but rotation directions are opposite (osteopathic model)."
+        ]
+      }
+    }
+  },
+  bogduk: {
+    c34RotDir: 'R',
+    overrides: {
+      'zh-TW': {
+        rightLabel: "C3-C4 · 同側耦合 (in vivo)",
+        rightRule: "C2-C7 · 同側耦合<br/>SB Right ⇒ Rotation Right<br/><span style='font-size:11px;opacity:.85'>facet 45° + uncovertebral 幾何</span>",
+        contraRule: "同側 (in vivo evidence)",
+        contraEasy: "Extension + 右側彎 + 右旋轉",
+        rightAnno: [
+          "C3-C4：facet 45° + uncovertebral joint 共同決定 in vivo 耦合",
+          "Extension：右 facet 應下後滑、左 facet 應上前滑",
+          "右側 facet 卡在前上 → up-and-forward 位置 → down-and-back 受限",
+          "Flexion 需要兩側 facet 上前滑；右側不動 → 頭往左偏",
+          "C2-C7 同側耦合（B&amp;M 2000）：SB Right ⇒ Rotation Right",
+          "右側彎 + 右旋轉 + Extension 容易（in vivo CT/MRI 證據）"
+        ],
+        desc: [
+          "中立位。C0-C1 的 condyle 在 C1 上面是水平前後滑動；C3-C4 的 facet 是沿著 45 度斜面上下滑動。",
+          "病人容易做 extension：兩邊頭部後仰，但左右的滑動方向不同（黃箭頭）。",
+          "在 extension 位觸診 → 右側卡在前。提醒：『卡在前』是 relative position，不是動作方向。",
+          "右側卡在前 → 無法後滑 → flexion 受限。嘗試低頭時頭會往左偏。",
+          "Coupling rule（in vivo）：C0-C1 變異大但常見同側；C2-C7 同側（facet 斜面 + uncovertebral 幾何決定）。",
+          "結論：兩者都是右側彎 + 右旋轉，但機轉與量級不同（B&amp;M 2000）。"
+        ]
+      },
+      en: {
+        rightLabel: "C3-C4 · Ipsilateral (in vivo)",
+        rightRule: "C2-C7 · Ipsilateral<br/>SB Right ⇒ Rotation Right<br/><span style='font-size:11px;opacity:.85'>45° facet + uncovertebral geometry</span>",
+        contraRule: "Ipsilateral (in vivo evidence)",
+        contraEasy: "Extension + Right SB + Right Rotation",
+        rightAnno: [
+          "C3-C4: 45° facet + uncovertebral joint shape in vivo coupling",
+          "Extension: right facet glides down-back, left up-fwd",
+          "Right facet stuck up-and-forward → down-and-back blocked",
+          "Flexion needs both facets to glide up-fwd; right won't → head tilts left",
+          "C2-C7 ipsilateral (B&amp;M 2000): SB Right ⇒ Rotation Right",
+          "Right SB + Right rotation + extension (in vivo CT/MRI evidence)"
+        ],
+        desc: [
+          "Neutral. C0-C1 condyles glide horizontally; C3-C4 facets glide along 45° slopes.",
+          "Patient extends easily — both heads tilt back, but glide directions differ (yellow arrows).",
+          "Palpate in extension → right side sits anterior. 'Anterior' = relative position, not motion direction.",
+          "Right stuck anterior → can't glide back → flexion restricted. Head deviates left when trying to flex.",
+          "Coupling (in vivo): C0-C1 variable but often ipsilateral; C2-C7 ipsilateral (facet slope + uncovertebral).",
+          "Both end up at Right SB + Right rotation, but mechanisms and magnitudes differ (B&amp;M 2000)."
+        ]
+      }
+    }
+  }
+};
+let currentLitVersion = 'osteo';
+
 function applyLang() {
-  const dict = i18n[currentLang];
+  const base = i18n[currentLang];
+  const ov = (litVersions[currentLitVersion].overrides[currentLang]) || {};
+  const dict = Object.assign({}, base, ov);
+  // expose merged dict for buildStep
+  window.__dict = dict;
+
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (dict[key]) el.innerHTML = dict[key];
+  });
+  // version selector active state
+  document.querySelectorAll('#litToggle button[data-lit]').forEach(b => {
+    b.classList.toggle('active', b.dataset.lit === currentLitVersion);
   });
   document.documentElement.lang = currentLang === 'en' ? 'en' : 'zh-TW';
   document.getElementById('langToggle').textContent = currentLang === 'zh-TW' ? 'EN' : '中';
   // refresh dynamic content
   setStep(currentStep, true);
+}
+
+function getDict() {
+  // merged base + version overrides
+  const base = i18n[currentLang];
+  const ov = (litVersions[currentLitVersion].overrides[currentLang]) || {};
+  return Object.assign({}, base, ov);
 }
 
 /* === colors === */
@@ -640,7 +821,8 @@ function buildStep(idx) {
   resetPose(true);
   const tl = gsap.timeline();
   activeTl = tl;
-  const dict = i18n[currentLang];
+  const dict = getDict();
+  const c34Rot = litVersions[currentLitVersion].c34RotDir === 'R' ? ROT_R : ROT_L;
 
   switch (idx) {
     case 0: { // neutral
@@ -733,9 +915,9 @@ function buildStep(idx) {
       // C0-C1: extension + right SB + right rotation
       tl.to(leftSpine.mainPivot.rotation,
         { x: EXT, z: SB_R, y: ROT_R, duration: 1.6, ease: "power2.inOut" }, 0);
-      // C3-C4: extension + right SB + LEFT rotation
+      // C3-C4: rotation direction depends on literature version
       tl.to(rightSpine.mainPivot.rotation,
-        { x: EXT, z: SB_R, y: ROT_L, duration: 1.6, ease: "power2.inOut" }, 0);
+        { x: EXT, z: SB_R, y: c34Rot, duration: 1.6, ease: "power2.inOut" }, 0);
       break;
     }
   }
@@ -749,7 +931,7 @@ function setStep(idx, refresh = false) {
   document.querySelectorAll('.step-pill').forEach(p => {
     p.classList.toggle('active', Number(p.dataset.step) === idx);
   });
-  document.getElementById('stepDesc').textContent = i18n[currentLang].desc[idx];
+  document.getElementById('stepDesc').textContent = getDict().desc[idx];
   buildStep(idx);
 }
 
@@ -796,6 +978,29 @@ document.getElementById('langToggle').addEventListener('click', () => {
   currentLang = currentLang === 'zh-TW' ? 'en' : 'zh-TW';
   applyLang();
 });
+
+/* === literature version toggle === */
+document.querySelectorAll('#litToggle button[data-lit]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const v = btn.dataset.lit;
+    if (v === currentLitVersion) return;
+    currentLitVersion = v;
+    applyLang();
+    // transient banner
+    const banner = document.getElementById('litBanner');
+    const dict = getDict();
+    banner.innerHTML = v === 'bogduk' ? dict.litBannerBogduk : dict.litBannerOsteo;
+    banner.classList.add('show');
+    clearTimeout(window.__litBannerT);
+    window.__litBannerT = setTimeout(() => banner.classList.remove('show'), 2200);
+  });
+});
+
+/* === info modal === */
+const infoModal = document.getElementById('infoModal');
+document.getElementById('infoBtn').addEventListener('click', () => infoModal.classList.add('show'));
+document.getElementById('infoClose').addEventListener('click', () => infoModal.classList.remove('show'));
+infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.remove('show'); });
 
 /* === recording (MediaRecorder on a composite canvas) === */
 const recBtn = document.getElementById('recBtn');
