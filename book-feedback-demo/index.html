@@ -4,233 +4,105 @@
 <meta charset="UTF-8">
 <title>Book Feedback 模擬器 — Demo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 0; background: #fafaf7; color: #1a1a1a; line-height: 1.6; }
-  header { background: #1a1a1a; color: #fff; padding: 18px 28px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
-  header h1 { margin: 0; font-size: 20px; font-weight: 600; }
-  header .subtitle { color: #999; font-size: 13px; margin-left: 12px; }
-  .demo-banner { background: #f4e3a3; color: #5a4400; padding: 10px 20px; font-size: 14px; border-bottom: 1px solid #d4b860; }
-  .demo-banner strong { color: #4a3300; }
-  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
-  .panel { background: #fff; border: 1px solid #e5e3da; border-radius: 8px; padding: 24px; margin-bottom: 20px; }
-  .panel h2 { margin: 0 0 16px 0; font-size: 18px; }
-  .panel h3 { margin: 16px 0 8px 0; font-size: 15px; color: #555; }
-  label { display: block; font-size: 13px; color: #555; margin: 12px 0 4px; font-weight: 500; }
-  textarea, input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid #d0cdc0; border-radius: 5px; font-family: inherit; font-size: 14px; background: #fff; color: #1a1a1a; }
-  textarea { resize: vertical; min-height: 120px; font-family: ui-monospace, "SF Mono", Menlo, monospace; line-height: 1.7; }
-  button { padding: 10px 18px; border: 0; border-radius: 5px; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; background: #2a4a2a; color: #fff; }
-  button:disabled { background: #999; cursor: not-allowed; opacity: 0.7; }
-  button.secondary { background: #6a6a6a; }
-  .session-list { display: grid; gap: 8px; }
-  .session-item { padding: 12px 14px; border: 1px solid #e5e3da; border-radius: 6px; cursor: pointer; transition: all 0.15s; background: #fff; display: flex; justify-content: space-between; align-items: center; }
-  .session-item:hover { border-color: #2a4a2a; background: #f4f8f4; }
-  .session-item.active { background: #2a4a2a; color: #fff; border-color: #2a4a2a; }
-  .session-item .meta { font-size: 12px; color: #888; }
-  .session-item.active .meta { color: #b0d0b0; }
-  .versions-bar { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
-  .version-tab { padding: 6px 12px; border: 1px solid #d0cdc0; border-radius: 5px; background: #fff; cursor: pointer; font-size: 13px; }
-  .version-tab.active { background: #2a4a2a; color: #fff; border-color: #2a4a2a; }
-  .markdown-body { line-height: 1.8; font-size: 15px; padding: 8px 4px; }
-  .markdown-body h1 { font-size: 24px; margin-top: 0; padding-bottom: 12px; border-bottom: 2px solid #1a1a1a; }
-  .markdown-body h2 { font-size: 19px; margin-top: 32px; padding-bottom: 6px; border-bottom: 1px solid #d8d6cc; }
-  .markdown-body h3 { font-size: 16px; margin-top: 22px; color: #333; }
-  .markdown-body blockquote { margin: 12px 0; padding: 10px 16px; background: #f4f8f4; border-left: 4px solid #2a4a2a; color: #2a4a2a; font-style: italic; }
-  .markdown-body table { border-collapse: collapse; margin: 12px 0; width: 100%; font-size: 13px; }
-  .markdown-body th, .markdown-body td { border: 1px solid #d8d6cc; padding: 8px 12px; text-align: left; vertical-align: top; }
-  .markdown-body th { background: #f4f2ec; }
-  .markdown-body code { background: #f4f2ec; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
-  .markdown-body strong { color: #1a1a1a; }
-  .markdown-body ul, .markdown-body ol { padding-left: 24px; }
-  .markdown-body li { margin: 4px 0; }
-  .empty-state { color: #888; text-align: center; padding: 40px 20px; }
-  .row { display: flex; gap: 12px; align-items: center; }
-  .grow { flex: 1 1 auto; }
-  .help { font-size: 12px; color: #888; margin-top: 4px; }
-  details { margin: 8px 0; }
-  details summary { cursor: pointer; padding: 6px 0; font-weight: 500; color: #555; }
-  details summary:hover { color: #2a4a2a; }
-  .passage-box { background: #f9f7f0; border: 1px dashed #d4b860; padding: 16px; border-radius: 6px; margin: 12px 0; line-height: 1.9; font-size: 14px; white-space: pre-wrap; }
-  #boot-status { padding: 40px; text-align: center; color: #888; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 0; background: #fafaf7; color: #1a1a1a; line-height: 1.6; }
+header { background: #1a1a1a; color: #fff; padding: 18px 28px; position: sticky; top: 0; z-index: 10; }
+header h1 { margin: 0; font-size: 20px; display: inline; }
+header .subtitle { color: #999; font-size: 13px; margin-left: 12px; }
+.demo-banner { background: #f4e3a3; color: #5a4400; padding: 10px 20px; font-size: 14px; border-bottom: 1px solid #d4b860; }
+.demo-banner strong { color: #4a3300; }
+.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+.panel { background: #fff; border: 1px solid #e5e3da; border-radius: 8px; padding: 24px; margin-bottom: 20px; }
+.panel h2 { margin: 0 0 16px 0; font-size: 18px; }
+.panel h3 { margin: 16px 0 8px 0; font-size: 15px; color: #555; }
+button { padding: 10px 18px; border: 0; border-radius: 5px; font-size: 14px; cursor: pointer; background: #2a4a2a; color: #fff; }
+button:disabled { background: #999; cursor: not-allowed; opacity: 0.7; }
+button.secondary { background: #6a6a6a; }
+.session-item { padding: 12px 14px; border: 1px solid #e5e3da; border-radius: 6px; background: #2a4a2a; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+.session-item .meta { font-size: 12px; color: #b0d0b0; }
+.version-tab { padding: 6px 12px; border: 1px solid #d0cdc0; border-radius: 5px; background: #2a4a2a; color: #fff; font-size: 13px; display: inline-block; margin-right: 8px; }
+.markdown-body { line-height: 1.8; font-size: 15px; padding: 8px 4px; }
+.markdown-body h1 { font-size: 24px; margin-top: 0; padding-bottom: 12px; border-bottom: 2px solid #1a1a1a; }
+.markdown-body h2 { font-size: 19px; margin-top: 32px; padding-bottom: 6px; border-bottom: 1px solid #d8d6cc; }
+.markdown-body h3 { font-size: 16px; margin-top: 22px; color: #333; }
+.markdown-body blockquote { margin: 12px 0; padding: 10px 16px; background: #f4f8f4; border-left: 4px solid #2a4a2a; color: #2a4a2a; font-style: italic; }
+.markdown-body table { border-collapse: collapse; margin: 12px 0; width: 100%; font-size: 13px; }
+.markdown-body th, .markdown-body td { border: 1px solid #d8d6cc; padding: 8px 12px; text-align: left; vertical-align: top; }
+.markdown-body th { background: #f4f2ec; }
+.markdown-body code { background: #f4f2ec; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+.markdown-body strong { color: #1a1a1a; }
+.markdown-body ul, .markdown-body ol { padding-left: 24px; }
+.markdown-body li { margin: 4px 0; }
+.help { font-size: 12px; color: #888; }
+details summary { cursor: pointer; padding: 6px 0; font-weight: 500; color: #555; }
+.passage-box { background: #f9f7f0; border: 1px dashed #d4b860; padding: 16px; border-radius: 6px; margin: 12px 0; line-height: 1.9; font-size: 14px; white-space: pre-wrap; }
+#boot { padding: 40px; text-align: center; color: #888; }
 </style>
 </head>
 <body>
-
-<header>
-  <div>
-    <h1 style="display:inline">📚 Book Feedback 模擬器</h1>
-    <span class="subtitle">25 persona × Claude Opus 4.7 — 唯讀 Demo</span>
-  </div>
-</header>
-
-<div class="demo-banner">
-  ⚠️ <strong>Demo 模式（唯讀）</strong> — 預先烘焙了《骨頭》第 3 章 v1 的真實模擬結果（25 persona 全套反應 + Result Card）。
-  「提交新版本」需要本機跑後端（Claude API 呼叫），<strong>在 Demo 上不可用</strong>。
-</div>
-
-<div id="boot-status">⏳ 載入中...</div>
-
+<header><h1>📚 Book Feedback 模擬器</h1><span class="subtitle">25 persona × Claude Opus 4.7 — 唯讀 Demo</span></header>
+<div class="demo-banner">⚠️ <strong>Demo 模式（唯讀）</strong> — 預先烘焙了《骨頭》第 3 章 v1 的真實模擬結果。要實際跑 v2/v3 需在本機跑後端。</div>
+<div id="boot">⏳ 載入中...</div>
 <div id="app" class="container" style="display:none">
-
   <div class="panel">
-    <h2>📁 Sessions</h2>
-    <div id="session-list" class="session-list"></div>
-    <details style="margin-top: 20px">
-      <summary>＋ 新建 Session（Demo 不可用）</summary>
-      <div style="margin-top: 12px; color: #888; font-size: 13px">
-        新建 session 會打 18 次 Claude Opus 生成 18 個讀者 persona（約 $1-2 USD），這在 Demo 上是停用的。本機跑請看下方說明。
-      </div>
-    </details>
-  </div>
-
-  <div id="session-detail" class="panel" style="display:none">
-    <div class="row">
-      <h2 class="grow" id="session-name"></h2>
-      <button class="secondary" id="btn-show-personas">查看 25 persona</button>
+    <h2>📁 Session</h2>
+    <div class="session-item">
+      <div><div><strong id="sn"></strong></div><div class="meta" id="sm"></div></div>
+      <div class="meta" id="sd"></div>
     </div>
-    <div id="session-meta" class="help"></div>
-
-    <h3>版本</h3>
-    <div class="versions-bar" id="versions-bar"></div>
-
-    <details style="margin-top: 12px">
-      <summary>📄 v1 試寫段落（點開看）</summary>
-      <div class="passage-box" id="passage-content"></div>
-    </details>
-
-    <details style="margin-top: 4px">
-      <summary>＋ 提交新版本（Demo 不可用）</summary>
-      <div style="margin-top: 12px">
-        <label>試寫段落</label>
-        <textarea disabled placeholder="(Demo 環境停用)"></textarea>
-        <button disabled style="margin-top: 12px">提交（Demo 環境停用）</button>
-      </div>
-    </details>
-
-    <div id="result-card-area"></div>
+    <div class="help" style="margin-top:8px"><strong>session 目標</strong>：<span id="sg"></span></div>
   </div>
-
-  <div class="panel" style="background: #f9f7f0; border-style: dashed">
-    <h2>📖 關於這個 Demo</h2>
-    <p style="font-size: 14px; color: #555; margin: 0 0 12px">
-      把作者的試寫段落丟給 25 個虛擬讀者（6 中 + 8 英 + 4 日 + 4 編輯 + 3 書評），每人各自反應，再聚合成一份「修書工作清單」。
-    </p>
-    <p style="font-size: 14px; color: #555; margin: 0">
-      <strong>本 Demo 顯示的 v1</strong>：刻意設計有文化盲點的「日本跪坐 vs 西方椅子」段落。系統在 25/25 personas 中正確抓出『痛是身為日本女人的一部分，像四季更迭』作為地雷單句。
-    </p>
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span class="version-tab">v1</span>
+      <button class="secondary" onclick="showPersonas()">查看 25 persona</button>
+    </div>
+    <details><summary>📄 v1 試寫段落</summary><div class="passage-box" id="pa"></div></details>
+    <div id="card"></div>
   </div>
-
+  <div class="panel" style="background:#f9f7f0;border-style:dashed">
+    <h2>📖 關於</h2>
+    <p style="font-size:14px;color:#555">25 個虛擬讀者（6 中 + 8 英 + 4 日 + 4 編輯 + 3 書評）讀同一段試寫，聚合成「修書工作清單」。本 demo 的 v1 是設計來踩雷的「日本跪坐」段落，系統正確抓出『痛是身為日本女人的一部分，像四季更迭』作為地雷單句。</p>
+  </div>
 </div>
-
 <script>
-let DATA = null;
-let currentSessionId = null;
-let currentVersion = null;
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
-
-async function loadGzipB64(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`fetch ${url} failed: ${r.status}`);
-  const b64 = (await r.text()).trim();
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-  return await new Response(stream).text();
-}
-
+let META = null;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 async function boot() {
-  const status = document.getElementById('boot-status');
+  const b = document.getElementById('boot');
   try {
-    status.textContent = '⏳ 解壓 marked.js...';
-    const markedSrc = await loadGzipB64('./marked.min.js.gz.b64');
-    const s = document.createElement('script');
-    s.text = markedSrc;
-    document.head.appendChild(s);
-
-    status.textContent = '⏳ 解壓 demo data...';
-    const dataJson = await loadGzipB64('./demo_data.json.gz.b64');
-    DATA = JSON.parse(dataJson);
-
-    status.style.display = 'none';
+    b.textContent = '⏳ 載入 meta...';
+    META = await (await fetch('./meta.json')).json();
+    b.textContent = '⏳ 載入 result card (3 chunks)...';
+    const [c1,c2,c3] = await Promise.all([
+      fetch('./card1.md').then(r=>r.text()),
+      fetch('./card2.md').then(r=>r.text()),
+      fetch('./card3.md').then(r=>r.text()),
+    ]);
+    const md = c1 + "\n\n" + c2 + "\n\n" + c3;
+    document.getElementById('sn').textContent = META.name;
+    document.getElementById('sm').textContent = `${META.session_id} · 1 個版本 · ✓ persona ready`;
+    document.getElementById('sd').textContent = META.created_at.split('T')[0];
+    document.getElementById('sg').textContent = META.session_goal || '（未設定）';
+    document.getElementById('pa').textContent = META.passage;
+    if (typeof marked !== 'undefined') {
+      document.getElementById('card').innerHTML = `<div class="markdown-body">${marked.parse(md)}</div>`;
+    } else {
+      document.getElementById('card').innerHTML = `<pre style="white-space:pre-wrap;font-size:13px">${esc(md)}</pre>`;
+    }
+    b.style.display = 'none';
     document.getElementById('app').style.display = 'block';
-
-    renderSessions();
-    if (DATA.sessions_summary.length) selectSession(DATA.sessions_summary[0].session_id);
   } catch (e) {
-    status.innerHTML = `<div style="color:#aa3a3a">啟動失敗：${escapeHtml(e.message)}<br><small>瀏覽器需支援 DecompressionStream API（Chrome 80+, Safari 16.4+, Firefox 113+）</small></div>`;
+    b.innerHTML = `<div style="color:#aa3a3a">啟動失敗：${esc(e.message)}</div>`;
   }
 }
-
-function renderSessions() {
-  const list = document.getElementById("session-list");
-  list.innerHTML = "";
-  for (const s of DATA.sessions_summary) {
-    const div = document.createElement("div");
-    div.className = "session-item" + (s.session_id === currentSessionId ? " active" : "");
-    div.onclick = () => selectSession(s.session_id);
-    div.innerHTML = `
-      <div>
-        <div><strong>${escapeHtml(s.name)}</strong></div>
-        <div class="meta">${s.session_id} · ${s.version_count} 個版本 · ✓ persona ready</div>
-      </div>
-      <div class="meta">${s.created_at.split("T")[0]}</div>
-    `;
-    list.appendChild(div);
-  }
+function showPersonas() {
+  const w = window.open('', '_blank');
+  w.document.write(`<title>25 personas</title><pre style="font-family:ui-monospace,monospace;padding:20px;background:#1a1a1a;color:#dfd;font-size:12px;line-height:1.6;white-space:pre-wrap">${esc(JSON.stringify(META.personas, null, 2))}</pre>`);
 }
-
-function selectSession(sid) {
-  currentSessionId = sid;
-  currentVersion = null;
-  renderSessions();
-  const sess = DATA.session_details[sid];
-  document.getElementById("session-detail").style.display = "block";
-  document.getElementById("session-name").textContent = sess.name;
-  document.getElementById("session-meta").innerHTML =
-    `<strong>session_id</strong>: ${sid} · <strong>建立</strong>: ${sess.created_at.split("T")[0]}<br>`
-    + `<strong>session 目標</strong>: ${escapeHtml(sess.session_goal || "（未設定）")}`;
-  renderVersionsBar(sess);
-  if (sess.versions && sess.versions.length) selectVersion(sess.versions[sess.versions.length - 1]);
-}
-
-function renderVersionsBar(sess) {
-  const bar = document.getElementById("versions-bar");
-  bar.innerHTML = "";
-  for (const v of sess.versions) {
-    const tab = document.createElement("div");
-    tab.className = "version-tab" + (v === currentVersion ? " active" : "");
-    tab.textContent = v;
-    tab.onclick = () => selectVersion(v);
-    bar.appendChild(tab);
-  }
-}
-
-function selectVersion(v) {
-  currentVersion = v;
-  const sess = DATA.session_details[currentSessionId];
-  renderVersionsBar(sess);
-  const cardData = DATA.result_cards[currentSessionId][v];
-  document.getElementById("passage-content").textContent = cardData.passage;
-  const md = cardData.result_card_markdown || "(空)";
-  document.getElementById("result-card-area").innerHTML =
-    `<div class="markdown-body">${marked.parse(md)}</div>`;
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById("btn-show-personas").onclick = () => {
-    if (!currentSessionId) return;
-    const personas = DATA.personas[currentSessionId];
-    const w = window.open("", "_blank");
-    w.document.write(`<title>25 personas — ${currentSessionId}</title>`);
-    w.document.write(`<pre style="font-family:ui-monospace,monospace;padding:20px;background:#1a1a1a;color:#dfd;font-size:12px;line-height:1.6;white-space:pre-wrap">${escapeHtml(JSON.stringify(personas, null, 2))}</pre>`);
-  };
-  boot();
-});
+boot();
 </script>
-
 </body>
 </html>
