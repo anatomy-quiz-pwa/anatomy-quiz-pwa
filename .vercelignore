@@ -1,0 +1,14 @@
+*.py
+*.command
+*.code-workspace
+Procfile
+runtime.txt
+requirements.txt
+practice_record.json
+google API 的json/
+anatomy_quiz_pwa/
+templates/
+static/
+*.png
+.DS_Store
+Icon
