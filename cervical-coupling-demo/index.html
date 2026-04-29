@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>頸椎耦合對照 — C0-C1 vs C3-C4</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+<style>
+  html, body { background:#0f1020; color:#f5f5dc; font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; overflow:hidden; }
+  .glow-red { box-shadow: 0 0 18px 4px rgba(255,107,107,0.65); }
+  .scene-wrap { position:relative; width:100%; height:100%; background: radial-gradient(ellipse at center, #1a1a2e 0%, #0f1020 80%); }
+  .scene-wrap canvas { display:block; width:100% !important; height:100% !important; }
+  .overlay { position:absolute; inset:0; pointer-events:none; }
+  .badge { position:absolute; top:14px; left:14px; background:rgba(78,205,196,0.18); border:1px solid #4ecdc4; color:#4ecdc4; padding:6px 12px; border-radius:999px; font-size:13px; letter-spacing:1px; font-weight:600; }
+  .badge.right { background:rgba(255,166,77,0.15); border-color:#ffa64d; color:#ffa64d; }
+  .anno { position:absolute; bottom:14px; left:14px; right:14px; background:rgba(15,16,32,0.78); border-left:3px solid #ffe66d; padding:10px 14px; border-radius:6px; font-size:14px; line-height:1.5; backdrop-filter: blur(4px); transition: opacity .4s ease; }
+  .anno.hidden { opacity:0; }
+  .rule-card { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.9); background:linear-gradient(140deg, rgba(78,205,196,0.95), rgba(50,140,140,0.95)); color:#0f1020; padding:18px 22px; border-radius:12px; font-weight:700; max-width:80%; text-align:center; box-shadow: 0 12px 40px rgba(0,0,0,0.5); opacity:0; transition: opacity .4s ease, transform .4s ease; pointer-events:none; }
+  .rule-card.right { background:linear-gradient(140deg, rgba(255,166,77,0.95), rgba(220,120,40,0.95)); }
+  .rule-card.show { opacity:1; transform: translate(-50%,-50%) scale(1); }
+  .divider-banner { position:fixed; top:48%; left:50%; transform:translate(-50%,-50%); background:#ff6b6b; color:#fff; padding:14px 28px; font-size:22px; font-weight:800; border-radius:8px; box-shadow:0 0 40px rgba(255,107,107,0.6); opacity:0; transition: opacity .4s ease; z-index:30; pointer-events:none; }
+  .divider-banner.show { opacity:1; }
+  .step-pill { padding:8px 14px; border-radius:999px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); font-size:12px; cursor:pointer; transition: all .2s; }
+  .step-pill.active { background:#4ecdc4; color:#0f1020; border-color:#4ecdc4; font-weight:700; }
+  .ctrl-btn { padding:8px 16px; border-radius:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#f5f5dc; font-size:14px; cursor:pointer; transition: all .15s; }
+  .ctrl-btn:hover { background:rgba(78,205,196,0.2); border-color:#4ecdc4; }
+  .ctrl-btn.primary { background:#4ecdc4; color:#0f1020; font-weight:700; border-color:#4ecdc4; }
+  .ctrl-btn.danger { background:#ff6b6b; color:#fff; border-color:#ff6b6b; }
+  .lang-toggle { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); padding:4px 10px; border-radius:6px; font-size:12px; cursor:pointer; }
+  .summary-table { font-size:13px; }
+  .summary-table th, .summary-table td { padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.1); text-align:left; }
+  .summary-table th { color:#4ecdc4; }
+  .summary-row.contra td { color:#ffa64d; }
+  body.recording .ui-hide { display:none !important; }
+  body.recording .scene-wrap { background: radial-gradient(ellipse at center, #1a1a2e 0%, #0f1020 80%) !important; }
+</style>
+</head>
+<body class="h-screen w-screen flex flex-col">
+
+<header class="ui-hide flex items-center justify-between px-5 py-3 border-b border-white/10 bg-[#0f1020]/80 backdrop-blur z-10">
+  <h1 class="text-base md:text-lg font-bold tracking-wide">
+    <span data-i18n="title">右側卡在伸直 — C0-C1 vs C3-C4 推理對照</span>
+  </h1>
+  <div class="flex items-center gap-3">
+    <button class="lang-toggle" id="langToggle">EN</button>
+    <span class="text-xs text-white/50" data-i18n="brand">What's Up Anatomy</span>
+  </div>
+</header>
+
+<main class="flex-1 grid grid-cols-2 gap-1 bg-white/5">
+  <!-- Left: C0-C1 ipsilateral -->
+  <div class="scene-wrap" id="leftWrap">
+    <canvas id="leftCanvas"></canvas>
+    <div class="overlay">
+      <div class="badge"><span data-i18n="leftLabel">C0-C1 · 同側耦合</span></div>
+      <div class="anno hidden" id="leftAnno"></div>
+      <div class="rule-card" id="leftRule"></div>
+    </div>
+  </div>
+  <!-- Right: C3-C4 contralateral -->
+  <div class="scene-wrap" id="rightWrap">
+    <canvas id="rightCanvas"></canvas>
+    <div class="overlay">
+      <div class="badge right"><span data-i18n="rightLabel">C3-C4 · 對側耦合</span></div>
+      <div class="anno hidden" id="rightAnno"></div>
+      <div class="rule-card right" id="rightRule"></div>
+    </div>
+  </div>
+</main>
+
+<div class="divider-banner" id="dividerBanner" data-i18n="dividerBanner">⚠️ Coupling rule 在此分歧</div>
+
+<section class="ui-hide bg-[#0f1020] border-t border-white/10 px-5 py-3">
+  <div class="flex items-center gap-2 mb-2 flex-wrap">
+    <span class="step-pill active" data-step="0"><span data-i18n="s0">Step 0 · 起始</span></span>
+    <span class="step-pill" data-step="1"><span data-i18n="s1">Step 1 · Extension</span></span>
+    <span class="step-pill" data-step="2"><span data-i18n="s2">Step 2 · 觸診發現</span></span>
+    <span class="step-pill" data-step="3"><span data-i18n="s3">Step 3 · 推回受限</span></span>
+    <span class="step-pill" data-step="4"><span data-i18n="s4">Step 4 · Coupling rule</span></span>
+    <span class="step-pill" data-step="5"><span data-i18n="s5">Step 5 · 結論</span></span>
+  </div>
+  <div class="text-sm text-white/80 min-h-[2.5rem]" id="stepDesc"></div>
+  <div id="summaryBlock" class="hidden mt-2">
+    <table class="summary-table w-full">
+      <thead><tr>
+        <th data-i18n="thLevel">節段</th>
+        <th data-i18n="thRule">耦合規則</th>
+        <th data-i18n="thEasy">「右側卡伸直」時容易做的方向</th>
+      </tr></thead>
+      <tbody>
+        <tr class="summary-row ipsi">
+          <td>C0-C1</td>
+          <td data-i18n="ipsiRule">同側 (ipsilateral)</td>
+          <td data-i18n="ipsiEasy">Extension + 右側彎 + 右旋轉</td>
+        </tr>
+        <tr class="summary-row contra">
+          <td>C3-C4</td>
+          <td data-i18n="contraRule">對側 (contralateral)</td>
+          <td data-i18n="contraEasy">Extension + 右側彎 + 左旋轉</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer class="ui-hide flex items-center justify-center gap-2 px-5 py-3 bg-[#0f1020] border-t border-white/10">
+  <button class="ctrl-btn" id="prevBtn">⏮ <span data-i18n="prev">上一步</span></button>
+  <button class="ctrl-btn primary" id="playBtn">▶️ <span data-i18n="play">自動播放</span></button>
+  <button class="ctrl-btn" id="nextBtn"><span data-i18n="next">下一步</span> ⏭</button>
+  <button class="ctrl-btn" id="resetBtn">🔄 <span data-i18n="reset">重置</span></button>
+  <button class="ctrl-btn danger" id="recBtn">📹 <span data-i18n="rec">錄製</span></button>
+</footer>
+
+<script>
+/* === i18n === */
+const i18n = {
+  'zh-TW': {
+    title: "右側卡在伸直 — C0-C1 vs C3-C4 推理對照",
+    brand: "What's Up Anatomy",
+    leftLabel: "C0-C1 · 同側耦合",
+    rightLabel: "C3-C4 · 對側耦合",
+    s0: "Step 0 · 起始", s1: "Step 1 · Extension", s2: "Step 2 · 觸診發現",
+    s3: "Step 3 · 推回受限", s4: "Step 4 · Coupling rule", s5: "Step 5 · 結論",
+    prev:"上一步", play:"自動播放", pause:"暫停", next:"下一步", reset:"重置", rec:"錄製", recStop:"停止錄製",
+    dividerBanner: "⚠️ Coupling rule 在此分歧",
+    thLevel:"節段", thRule:"耦合規則", thEasy:"「右側卡伸直」時容易做的方向",
+    ipsiRule:"同側 (ipsilateral)", ipsiEasy:"Extension + 右側彎 + 右旋轉",
+    contraRule:"對側 (contralateral)", contraEasy:"Extension + 右側彎 + 左旋轉",
+    desc: [
+      "中立位。注意 C0-C1 的 condyle 在 C1 上面是水平前後滑動；C3-C4 的 facet 是沿著 45 度斜面上下滑動。",
+      "病人容易做 extension：兩邊頭部後仰，但左右的滑動方向不同（黃箭頭）。",
+      "在 extension 位觸診 → 右側卡在前。提醒：『卡在前』是 relative position，不是動作方向。",
+      "右側卡在前 → 無法後滑 → flexion 受限。嘗試低頭時頭會往左偏。",
+      "Coupling rule 在此分歧：C0-C2 同側耦合；C2-C7 對側耦合。",
+      "結論：兩者都伴隨右側彎，但旋轉方向相反。"
+    ],
+    leftAnno: [
+      "C0-C1：condyle ↔ C1 上關節面（水平軌道）",
+      "Extension：右 condyle 應前滑、左 condyle 應後滑",
+      "右側 condyle 卡在前 → anterior glide 受限",
+      "Flexion 需要兩側 condyle 後滑；右側不動 → 頭往左偏",
+      "C0-C2 同側耦合：SB Right ⇒ Rotation Right",
+      "右側彎 + 右旋轉 + Extension 容易"
+    ],
+    rightAnno: [
+      "C3-C4：facet 沿 45° 斜面（上前 ↔ 下後）",
+      "Extension：右 facet 應下後滑、左 facet 應上前滑",
+      "右側 facet 卡在前上 → up-and-forward 位置 → down-and-back 受限",
+      "Flexion 需要兩側 facet 上前滑；右側不動 → 頭往左偏",
+      "C2-C7 對側耦合：SB Right ⇒ Rotation Left",
+      "右側彎 + 左旋轉 + Extension 容易"
+    ],
+    leftRule: "C0-C2 · 同側耦合<br/>SB Right ⇒ Rotation Right",
+    rightRule: "C2-C7 · 對側耦合<br/>SB Right ⇒ Rotation Left"
+  },
+  'en': {
+    title: "Right side stuck in extension — C0-C1 vs C3-C4",
+    brand: "What's Up Anatomy",
+    leftLabel: "C0-C1 · Ipsilateral coupling",
+    rightLabel: "C3-C4 · Contralateral coupling",
+    s0:"Step 0 · Start", s1:"Step 1 · Extension", s2:"Step 2 · Palpation",
+    s3:"Step 3 · Restricted return", s4:"Step 4 · Coupling rule", s5:"Step 5 · Summary",
+    prev:"Prev", play:"Auto-play", pause:"Pause", next:"Next", reset:"Reset", rec:"Record", recStop:"Stop",
+    dividerBanner: "⚠️ Coupling rules diverge here",
+    thLevel:"Level", thRule:"Coupling", thEasy:"Easy combo when 'right stuck in ext'",
+    ipsiRule:"Ipsilateral", ipsiEasy:"Extension + Right SB + Right Rotation",
+    contraRule:"Contralateral", contraEasy:"Extension + Right SB + Left Rotation",
+    desc: [
+      "Neutral. C0-C1 condyles glide horizontally on C1; C3-C4 facets glide along 45° oblique planes.",
+      "Patient extends easily — both heads tilt back, but the glide directions differ (yellow arrows).",
+      "Palpate in extension → right side sits anterior. 'Anterior' is a relative position, not a direction of motion.",
+      "Right stuck anterior → can't glide back → flexion restricted. Head deviates left when trying to flex.",
+      "Coupling rules diverge: C0-C2 ipsilateral; C2-C7 contralateral.",
+      "Both involve right sidebending, but rotation directions are opposite."
+    ],
+    leftAnno: [
+      "C0-C1: condyle on C1 superior facet (horizontal track)",
+      "Extension: right condyle glides anterior, left posterior",
+      "Right condyle stuck anterior → anterior glide blocked",
+      "Flexion needs both condyles to glide posterior; right won't → head tilts left",
+      "C0-C2 ipsilateral: SB Right ⇒ Rotation Right",
+      "Right SB + Right rotation + extension is the easy combo"
+    ],
+    rightAnno: [
+      "C3-C4: facet rides a 45° slope (up-fwd ↔ down-back)",
+      "Extension: right facet glides down-back, left up-fwd",
+      "Right facet stuck up-and-forward → down-and-back blocked",
+      "Flexion needs both facets to glide up-fwd; right won't → head tilts left",
+      "C2-C7 contralateral: SB Right ⇒ Rotation Left",
+      "Right SB + Left rotation + extension is the easy combo"
+    ],
+    leftRule: "C0-C2 · Ipsilateral<br/>SB Right ⇒ Rotation Right",
+    rightRule: "C2-C7 · Contralateral<br/>SB Right ⇒ Rotation Left"
+  }
+};
+let currentLang = 'zh-TW';
+
+function applyLang() {
+  const dict = i18n[currentLang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (dict[key]) el.innerHTML = dict[key];
+  });
+  document.documentElement.lang = currentLang === 'en' ? 'en' : 'zh-TW';
+  document.getElementById('langToggle').textContent = currentLang === 'zh-TW' ? 'EN' : '中';
+  // refresh dynamic content
+  setStep(currentStep, true);
+}
+
+/* === colors === */
+const COL = {
+  bone: 0xf5f5dc,
+  highlight: 0x4ecdc4,
+  highlight2: 0xffa64d,
+  stuck: 0xff6b6b,
+  arrow: 0xffe66d
+};
+
+/* === vertebra builders ===
+   Simplified geometric blocks. Each vertebra is an Object3D with optional
+   userData.leftFacet / rightFacet meshes for highlighting glide / stuck states.
+   Coordinate system: +X = patient's left, +Y = up, +Z = anterior.
+*/
+const matCache = {};
+function mat(color, opts = {}) {
+  const key = color + '|' + JSON.stringify(opts);
+  if (matCache[key]) return matCache[key].clone();
+  return new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.05, ...opts });
+}
+
+function makeFacet(color, w = 0.9, d = 0.9, h = 0.18) {
+  const g = new THREE.BoxGeometry(w, h, d);
+  const m = new THREE.Mesh(g, mat(color));
+  m.castShadow = true;
+  return m;
+}
+
+// C0 occiput: flat trapezoid (wide top, narrower bottom) + 2 condyles underneath
+function buildC0() {
+  const g = new THREE.Group();
+  g.name = 'C0';
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(3.4, 0.9, 2.6),
+    mat(COL.bone)
+  );
+  body.position.y = 0.45;
+  g.add(body);
+  // dome on top
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(1.5, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+    mat(COL.bone)
+  );
+  dome.position.y = 0.9;
+  dome.scale.set(1.0, 0.7, 0.85);
+  g.add(dome);
+  // condyles (left & right)
+  const condyleGeo = new THREE.SphereGeometry(0.45, 20, 14);
+  const lc = new THREE.Mesh(condyleGeo, mat(COL.bone));
+  lc.position.set(0.85, -0.05, 0);
+  lc.scale.set(1, 0.55, 1.4);
+  g.add(lc);
+  const rc = new THREE.Mesh(condyleGeo, mat(COL.bone));
+  rc.position.set(-0.85, -0.05, 0);
+  rc.scale.set(1, 0.55, 1.4);
+  g.add(rc);
+  g.userData.leftFacet = lc;
+  g.userData.rightFacet = rc;
+  return g;
+}
+
+// C1 atlas: ring with two superior cup facets
+function buildC1() {
+  const g = new THREE.Group();
+  g.name = 'C1';
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(1.2, 0.35, 14, 36),
+    mat(COL.bone)
+  );
+  ring.rotation.x = Math.PI / 2;
+  ring.scale.set(1.1, 1.0, 0.65);
+  g.add(ring);
+  // superior facets (cup shape, simplified as flattened spheres)
+  const cup = new THREE.SphereGeometry(0.45, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2);
+  const lf = new THREE.Mesh(cup, mat(COL.bone));
+  lf.position.set(0.85, 0.18, 0);
+  lf.scale.set(1, 0.4, 1.4);
+  lf.rotation.x = Math.PI;
+  g.add(lf);
+  const rf = new THREE.Mesh(cup, mat(COL.bone));
+  rf.position.set(-0.85, 0.18, 0);
+  rf.scale.set(1, 0.4, 1.4);
+  rf.rotation.x = Math.PI;
+  g.add(rf);
+  g.userData.leftFacet = lf;
+  g.userData.rightFacet = rf;
+  return g;
+}
+
+// Typical cervical vertebra (C2..C7): vertebral body + two angled facet ramps
+// facetTilt is the angle (radians) of the superior facet from horizontal.
+function buildTypical(facetTilt = Math.PI / 4, accent = false) {
+  const g = new THREE.Group();
+  const bodyColor = accent ? COL.highlight2 : COL.bone;
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(2.2, 0.85, 1.8),
+    mat(bodyColor)
+  );
+  g.add(body);
+  // facet pillars (left & right) — ramps tilted along sagittal plane
+  function pillar(side) {
+    const p = new THREE.Group();
+    const pillarBase = new THREE.Mesh(
+      new THREE.BoxGeometry(0.7, 0.7, 1.4),
+      mat(bodyColor)
+    );
+    pillarBase.position.set(0, 0.05, -0.05);
+    p.add(pillarBase);
+    // top facet (sloped surface)
+    const topFacet = makeFacet(COL.bone, 0.7, 1.2, 0.16);
+    topFacet.position.set(0, 0.5, 0);
+    topFacet.rotation.x = -facetTilt + Math.PI / 4; // 0 = horizontal-ish; tilt forward
+    p.add(topFacet);
+    // bottom facet
+    const botFacet = makeFacet(COL.bone, 0.7, 1.2, 0.16);
+    botFacet.position.set(0, -0.4, 0);
+    botFacet.rotation.x = -facetTilt + Math.PI / 4;
+    p.add(botFacet);
+    p.position.x = side * 1.35;
+    p.userData.topFacet = topFacet;
+    p.userData.botFacet = botFacet;
+    return p;
+  }
+  const lp = pillar(1);
+  const rp = pillar(-1);
+  g.add(lp); g.add(rp);
+  g.userData.leftFacet = lp.userData.topFacet;
+  g.userData.rightFacet = rp.userData.topFacet;
+  g.userData.leftPillar = lp;
+  g.userData.rightPillar = rp;
+  return g;
+}
+
+// Build a chain of vertebrae and parent each as child of the next-lower so we
+// can rotate any "head group" = top vertebra and everything above it.
+// Returns { root, segments: [{name, group, joint}], headOf(name) }
+function buildSpine(highlightLevel) {
+  // highlightLevel: 'C01' or 'C34'
+  const root = new THREE.Group();
+
+  // Stack from bottom (T1) up to C0
+  const order = ['T1','C7','C6','C5','C4','C3','C2','C1','C0'];
+  const heights = { T1:1.0, C7:0.95, C6:0.95, C5:0.95, C4:0.95, C3:0.95, C2:1.0, C1:0.6, C0:1.1 };
+  const segments = {};
+
+  let yCursor = 0;
+  let parent = root;
+  for (const name of order) {
+    let mesh;
+    if (name === 'C0') mesh = buildC0();
+    else if (name === 'C1') mesh = buildC1();
+    else if (name === 'C2') {
+      mesh = buildTypical(Math.PI/4, false);
+      // C2 has odontoid — small peg
+      const peg = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.7, 16), mat(COL.bone));
+      peg.position.y = 0.6;
+      mesh.add(peg);
+    } else if (name === 'T1') {
+      mesh = buildTypical(Math.PI/3, false);
+      mesh.scale.set(1.15,1,1.1);
+    } else {
+      mesh = buildTypical(Math.PI/4, false);
+    }
+    mesh.position.y = yCursor + heights[name]/2;
+    parent.add(mesh);
+    segments[name] = mesh;
+    // next vertebra is parented to this one so head rotation cascades
+    yCursor += heights[name];
+    parent = mesh; // stack as nested children → rotating C2 rotates head above it
+    // But we want each piece to occupy its own absolute Y space; nesting requires
+    // we adjust: child position should be relative to parent. Since heights are
+    // similar, we offset child by parent's half-height. We'll fix below by NOT
+    // nesting and instead grouping "head above joint" dynamically.
+  }
+
+  // Re-do with flat hierarchy under root, then build "headGroups" we can rotate.
+  // Clear and rebuild flat:
+  while (root.children.length) root.remove(root.children[0]);
+  yCursor = 0;
+  for (const name of order) {
+    const mesh = segments[name];
+    mesh.position.set(0, yCursor + heights[name]/2 - 4.5, 0);
+    yCursor += heights[name];
+    root.add(mesh);
+  }
+
+  // Pivot groups — to rotate "everything from level X upward" we use a pivot.
+  function pivotAt(levelName) {
+    const piv = new THREE.Group();
+    const baseY = segments[levelName].position.y - heights[levelName]/2;
+    piv.position.y = baseY;
+    root.add(piv);
+    // move all vertebrae at-or-above levelName into the pivot, preserving world Y
+    const aboveOrder = order.slice(order.indexOf(levelName));
+    for (const n of aboveOrder) {
+      const m = segments[n];
+      const wp = m.position.clone();
+      root.remove(m);
+      piv.add(m);
+      m.position.set(wp.x, wp.y - baseY, wp.z);
+    }
+    return piv;
+  }
+
+  // For C0-C1 scene: pivot at C0 (rotate occiput on C1)
+  // For C3-C4 scene: pivot at C3 (rotate everything above C4)
+  let mainPivot, jointY;
+  if (highlightLevel === 'C01') {
+    jointY = segments.C0.position.y - heights.C0 / 2;
+    mainPivot = pivotAt('C0');
+    [segments.C0, segments.C1].forEach(s => tintGroup(s, COL.highlight, 0.18));
+  } else {
+    jointY = segments.C3.position.y - heights.C3 / 2;
+    mainPivot = pivotAt('C3');
+    [segments.C3, segments.C4].forEach(s => tintGroup(s, COL.highlight2, 0.18));
+  }
+  // Center the spine so the joint of interest sits at y = 0 in scene coords
+  root.position.y = -jointY;
+
+  return { root, segments, mainPivot, jointY, highlightLevel };
+}
+
+function tintGroup(group, color, amount) {
+  group.traverse(o => {
+    if (o.isMesh && o.material && o.material.color) {
+      o.material = o.material.clone();
+      o.material.emissive = new THREE.Color(color);
+      o.material.emissiveIntensity = amount;
+    }
+  });
+}
+
+function setStuck(facetMesh, on) {
+  if (!facetMesh) return;
+  if (!facetMesh.userData._origColor) {
+    facetMesh.userData._origColor = facetMesh.material.color.getHex();
+    facetMesh.userData._origEmissive = facetMesh.material.emissive ? facetMesh.material.emissive.getHex() : 0x000000;
+  }
+  if (on) {
+    facetMesh.material = facetMesh.material.clone();
+    facetMesh.material.color.setHex(COL.stuck);
+    facetMesh.material.emissive = new THREE.Color(COL.stuck);
+    facetMesh.material.emissiveIntensity = 0.7;
+  } else {
+    facetMesh.material = facetMesh.material.clone();
+    facetMesh.material.color.setHex(facetMesh.userData._origColor);
+    facetMesh.material.emissive = new THREE.Color(facetMesh.userData._origEmissive);
+    facetMesh.material.emissiveIntensity = 0.18;
+  }
+}
+
+/* === scene setup === */
+function makeScene(canvas) {
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.shadowMap.enabled = true;
+  const scene = new THREE.Scene();
+  scene.background = null;
+
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+  camera.position.set(7, 2.5, 9);
+  camera.lookAt(0, 0, 0);
+
+  const amb = new THREE.AmbientLight(0xffffff, 0.55);
+  scene.add(amb);
+  const key = new THREE.DirectionalLight(0xffffff, 0.85);
+  key.position.set(5, 8, 6);
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0x88ccff, 0.4);
+  rim.position.set(-6, 3, -4);
+  scene.add(rim);
+
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.target.set(0, 0, 0);
+  controls.minDistance = 6;
+  controls.maxDistance = 20;
+
+  return { renderer, scene, camera, controls };
+}
+
+const leftCanvas = document.getElementById('leftCanvas');
+const rightCanvas = document.getElementById('rightCanvas');
+const L = makeScene(leftCanvas);
+const R = makeScene(rightCanvas);
+
+const leftSpine = buildSpine('C01');
+const rightSpine = buildSpine('C34');
+L.scene.add(leftSpine.root);
+R.scene.add(rightSpine.root);
+
+/* === arrows (glide direction + flexion-attempt) === */
+function makeArrow(color, length = 1.2) {
+  const dir = new THREE.Vector3(0, 0, 1);
+  const origin = new THREE.Vector3(0, 0, 0);
+  const arrow = new THREE.ArrowHelper(dir, origin, length, color, 0.3, 0.18);
+  arrow.visible = false;
+  return arrow;
+}
+
+const leftArrows = {
+  rGlide: makeArrow(COL.arrow, 1.0),
+  lGlide: makeArrow(COL.arrow, 1.0)
+};
+const rightArrows = {
+  rGlide: makeArrow(COL.arrow, 1.2),
+  lGlide: makeArrow(COL.arrow, 1.2)
+};
+// position glide arrows near the joint of interest
+function placeLeftArrows() {
+  const c1 = leftSpine.segments.C1;
+  // attach into world
+  leftSpine.root.add(leftArrows.rGlide);
+  leftSpine.root.add(leftArrows.lGlide);
+  leftArrows.rGlide.position.set(-0.85, c1.position.y + 0.4, 0.6);
+  leftArrows.lGlide.position.set(0.85, c1.position.y + 0.4, 0.6);
+  // horizontal direction: anterior (+Z)
+  leftArrows.rGlide.setDirection(new THREE.Vector3(0,0,1));
+  leftArrows.lGlide.setDirection(new THREE.Vector3(0,0,1));
+}
+function placeRightArrows() {
+  const c4 = rightSpine.segments.C4;
+  rightSpine.root.add(rightArrows.rGlide);
+  rightSpine.root.add(rightArrows.lGlide);
+  rightArrows.rGlide.position.set(-1.35, c4.position.y + 0.6, 0.4);
+  rightArrows.lGlide.position.set(1.35, c4.position.y + 0.6, 0.4);
+  // 45° ramp direction: up-and-back for 'down-and-back glide' demo (extension)
+  const upBack = new THREE.Vector3(0, 0.7, -0.7).normalize();
+  rightArrows.rGlide.setDirection(upBack);
+  rightArrows.lGlide.setDirection(upBack);
+}
+placeLeftArrows();
+placeRightArrows();
+
+/* === mirror-synced orbit controls ===
+   Sync the camera offset (relative to each scene's target) so both views show
+   the same anatomical perspective even though the joints are at different
+   absolute heights.
+*/
+let syncing = false;
+function syncControls(src, dst) {
+  if (syncing) return;
+  syncing = true;
+  const offset = src.camera.position.clone().sub(src.controls.target);
+  dst.camera.position.copy(dst.controls.target).add(offset);
+  dst.camera.up.copy(src.camera.up);
+  dst.controls.update();
+  syncing = false;
+}
+L.controls.addEventListener('change', () => syncControls(L, R));
+R.controls.addEventListener('change', () => syncControls(R, L));
+
+/* === resize === */
+function resize() {
+  for (const [wrapId, ctx, canvas] of [['leftWrap', L, leftCanvas], ['rightWrap', R, rightCanvas]]) {
+    const wrap = document.getElementById(wrapId);
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    ctx.renderer.setSize(w, h, false);
+    ctx.camera.aspect = w / h;
+    ctx.camera.updateProjectionMatrix();
+  }
+}
+window.addEventListener('resize', resize);
+setTimeout(resize, 0);
+
+/* === render loop === */
+function tick() {
+  requestAnimationFrame(tick);
+  L.controls.update();
+  R.controls.update();
+  L.renderer.render(L.scene, L.camera);
+  R.renderer.render(R.scene, R.camera);
+}
+tick();
+
+/* === step animations ===
+   Pivots:
+     leftSpine.mainPivot rotates everything from C0 upward (i.e., the head)
+     rightSpine.mainPivot rotates everything from C3 upward
+   Convention (right-hand):
+     rotation.x : positive = flexion (chin down), negative = extension (chin up)
+     rotation.z : positive = LEFT sidebend; negative = RIGHT sidebend
+     rotation.y : positive = LEFT rotation; negative = RIGHT rotation
+*/
+
+let currentStep = 0;
+let activeTl = null;
+let autoplayTl = null;
+
+function killTimelines() {
+  if (activeTl) { activeTl.kill(); activeTl = null; }
+  if (autoplayTl) { autoplayTl.kill(); autoplayTl = null; }
+}
+
+function resetPose(immediate = false) {
+  const dur = immediate ? 0 : 0.6;
+  gsap.to(leftSpine.mainPivot.rotation,  { x:0, y:0, z:0, duration:dur, ease:"power2.out" });
+  gsap.to(rightSpine.mainPivot.rotation, { x:0, y:0, z:0, duration:dur, ease:"power2.out" });
+  // clear stuck markers
+  setStuck(leftSpine.segments.C0.userData.rightFacet, false);
+  setStuck(rightSpine.segments.C3.userData.rightFacet, false);
+  // hide arrows
+  leftArrows.rGlide.visible = leftArrows.lGlide.visible = false;
+  rightArrows.rGlide.visible = rightArrows.lGlide.visible = false;
+  // hide rule cards & banner
+  document.getElementById('leftRule').classList.remove('show');
+  document.getElementById('rightRule').classList.remove('show');
+  document.getElementById('dividerBanner').classList.remove('show');
+  document.getElementById('summaryBlock').classList.add('hidden');
+}
+
+function setAnno(side, html) {
+  const el = document.getElementById(side === 'L' ? 'leftAnno' : 'rightAnno');
+  if (!html) { el.classList.add('hidden'); return; }
+  el.innerHTML = html;
+  el.classList.remove('hidden');
+}
+
+const EXT = -0.45;     // extension angle
+const FLEX = 0.35;     // flexion attempt
+const SB_R = -0.30;    // right sidebend (z negative)
+const ROT_R = -0.30;   // right rotation (y negative)
+const ROT_L = 0.30;    // left rotation
+
+function buildStep(idx) {
+  killTimelines();
+  resetPose(true);
+  const tl = gsap.timeline();
+  activeTl = tl;
+  const dict = i18n[currentLang];
+
+  switch (idx) {
+    case 0: { // neutral
+      setAnno('L', dict.leftAnno[0]);
+      setAnno('R', dict.rightAnno[0]);
+      break;
+    }
+    case 1: { // extension — both heads tilt back, glide arrows show
+      setAnno('L', dict.leftAnno[1]);
+      setAnno('R', dict.rightAnno[1]);
+      tl.to(leftSpine.mainPivot.rotation,  { x: EXT, duration: 1.2, ease: "power2.inOut" }, 0);
+      tl.to(rightSpine.mainPivot.rotation, { x: EXT, duration: 1.2, ease: "power2.inOut" }, 0);
+      // show arrows: in extension, anterior glide on the side that goes up
+      tl.call(() => {
+        leftArrows.rGlide.visible = true;       // right condyle glides anterior
+        leftArrows.lGlide.visible = true;
+        rightArrows.rGlide.visible = true;      // 45° up-and-back direction
+        rightArrows.lGlide.visible = true;
+        // for left scene, arrows are horizontal anterior; flip the LEFT-side arrow to show posterior glide
+        leftArrows.lGlide.setDirection(new THREE.Vector3(0,0,-1));
+        const downFwd = new THREE.Vector3(0, -0.7, 0.7).normalize();
+        rightArrows.lGlide.setDirection(downFwd);
+      }, [], 0.4);
+      break;
+    }
+    case 2: { // palpation — extension hold + right side stuck red
+      setAnno('L', dict.leftAnno[2]);
+      setAnno('R', dict.rightAnno[2]);
+      tl.set(leftSpine.mainPivot.rotation,  { x: EXT });
+      tl.set(rightSpine.mainPivot.rotation, { x: EXT });
+      tl.call(() => {
+        setStuck(leftSpine.segments.C0.userData.rightFacet, true);
+        setStuck(rightSpine.segments.C3.userData.rightFacet, true);
+        leftArrows.rGlide.visible = leftArrows.lGlide.visible = false;
+        rightArrows.rGlide.visible = rightArrows.lGlide.visible = false;
+      });
+      // shake the stuck side
+      const shake = (obj) => {
+        gsap.to(obj.position, { x: obj.position.x + 0.04, duration: 0.08, repeat: 5, yoyo: true });
+      };
+      tl.call(() => {
+        shake(leftSpine.segments.C0.userData.rightFacet);
+        shake(rightSpine.segments.C3.userData.rightFacet);
+      }, [], 0.2);
+      break;
+    }
+    case 3: { // try flexion — right side held → head deviates left
+      setAnno('L', dict.leftAnno[3]);
+      setAnno('R', dict.rightAnno[3]);
+      tl.set(leftSpine.mainPivot.rotation,  { x: EXT });
+      tl.set(rightSpine.mainPivot.rotation, { x: EXT });
+      tl.call(() => {
+        setStuck(leftSpine.segments.C0.userData.rightFacet, true);
+        setStuck(rightSpine.segments.C3.userData.rightFacet, true);
+      });
+      // Move from extension toward flexion but right side won't release →
+      // visualized as: x rotation only goes part-way, plus z rotation (left sidebend)
+      // because the right side can't follow → relative left tilt.
+      tl.to(leftSpine.mainPivot.rotation,
+        { x: EXT * 0.4, z: 0.18, duration: 1.4, ease: "power2.inOut" }, 0);
+      tl.to(rightSpine.mainPivot.rotation,
+        { x: EXT * 0.4, z: 0.18, duration: 1.4, ease: "power2.inOut" }, 0);
+      break;
+    }
+    case 4: { // coupling rule reveal
+      setAnno('L', dict.leftAnno[4]);
+      setAnno('R', dict.rightAnno[4]);
+      tl.set(leftSpine.mainPivot.rotation,  { x: EXT });
+      tl.set(rightSpine.mainPivot.rotation, { x: EXT });
+      tl.call(() => {
+        setStuck(leftSpine.segments.C0.userData.rightFacet, true);
+        setStuck(rightSpine.segments.C3.userData.rightFacet, true);
+        document.getElementById('leftRule').innerHTML = dict.leftRule;
+        document.getElementById('rightRule').innerHTML = dict.rightRule;
+        document.getElementById('leftRule').classList.add('show');
+        document.getElementById('rightRule').classList.add('show');
+        document.getElementById('dividerBanner').classList.add('show');
+      });
+      break;
+    }
+    case 5: { // conclusion — show the easy combo on each side
+      setAnno('L', dict.leftAnno[5]);
+      setAnno('R', dict.rightAnno[5]);
+      tl.call(() => {
+        setStuck(leftSpine.segments.C0.userData.rightFacet, false);
+        setStuck(rightSpine.segments.C3.userData.rightFacet, false);
+        document.getElementById('summaryBlock').classList.remove('hidden');
+        document.getElementById('dividerBanner').classList.remove('show');
+      });
+      // C0-C1: extension + right SB + right rotation
+      tl.to(leftSpine.mainPivot.rotation,
+        { x: EXT, z: SB_R, y: ROT_R, duration: 1.6, ease: "power2.inOut" }, 0);
+      // C3-C4: extension + right SB + LEFT rotation
+      tl.to(rightSpine.mainPivot.rotation,
+        { x: EXT, z: SB_R, y: ROT_L, duration: 1.6, ease: "power2.inOut" }, 0);
+      break;
+    }
+  }
+  return tl;
+}
+
+function setStep(idx, refresh = false) {
+  idx = Math.max(0, Math.min(5, idx));
+  if (!refresh && idx === currentStep) return;
+  currentStep = idx;
+  document.querySelectorAll('.step-pill').forEach(p => {
+    p.classList.toggle('active', Number(p.dataset.step) === idx);
+  });
+  document.getElementById('stepDesc').textContent = i18n[currentLang].desc[idx];
+  buildStep(idx);
+}
+
+/* === controls === */
+document.getElementById('prevBtn').addEventListener('click', () => setStep(currentStep - 1));
+document.getElementById('nextBtn').addEventListener('click', () => setStep(currentStep + 1));
+document.getElementById('resetBtn').addEventListener('click', () => setStep(0));
+document.querySelectorAll('.step-pill').forEach(p => {
+  p.addEventListener('click', () => setStep(Number(p.dataset.step)));
+});
+
+let playing = false;
+const playBtn = document.getElementById('playBtn');
+function startAutoplay({ onDone } = {}) {
+  if (playing) return;
+  playing = true;
+  playBtn.innerHTML = '⏸ <span>' + i18n[currentLang].pause + '</span>';
+  let i = 0;
+  setStep(0);
+  const stepDur = 5; // seconds per step
+  autoplayTl = gsap.timeline({
+    onComplete: () => {
+      playing = false;
+      playBtn.innerHTML = '▶️ <span>' + i18n[currentLang].play + '</span>';
+      if (onDone) onDone();
+    }
+  });
+  // walk steps 1..5 each held for stepDur
+  for (let s = 1; s <= 5; s++) {
+    autoplayTl.call(() => setStep(s), [], (s - 1) * stepDur + 0.2);
+  }
+  autoplayTl.to({}, { duration: 5 * stepDur + 1 });
+}
+function stopAutoplay() {
+  if (!playing) return;
+  if (autoplayTl) autoplayTl.kill();
+  playing = false;
+  playBtn.innerHTML = '▶️ <span>' + i18n[currentLang].play + '</span>';
+}
+playBtn.addEventListener('click', () => playing ? stopAutoplay() : startAutoplay());
+
+/* === language toggle === */
+document.getElementById('langToggle').addEventListener('click', () => {
+  currentLang = currentLang === 'zh-TW' ? 'en' : 'zh-TW';
+  applyLang();
+});
+
+/* === recording (MediaRecorder on a composite canvas) === */
+const recBtn = document.getElementById('recBtn');
+let recorder = null, recording = false;
+
+function makeCompositeCanvas(w = 1920, h = 1080) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return c;
+}
+
+async function startRecording() {
+  // Resize renderers to half-width each at 1080 height for crisp 1920x1080 output
+  const targetW = 1920, targetH = 1080;
+  const half = targetW / 2;
+
+  document.body.classList.add('recording');
+  // force scenes to render at composite-friendly resolution
+  L.renderer.setSize(half, targetH, false);
+  R.renderer.setSize(half, targetH, false);
+  L.camera.aspect = half / targetH; L.camera.updateProjectionMatrix();
+  R.camera.aspect = half / targetH; R.camera.updateProjectionMatrix();
+
+  const composite = makeCompositeCanvas(targetW, targetH);
+  const ctx = composite.getContext('2d');
+
+  let stopped = false;
+  function drawComposite() {
+    if (stopped) return;
+    ctx.fillStyle = '#0f1020';
+    ctx.fillRect(0, 0, targetW, targetH);
+    ctx.drawImage(L.renderer.domElement, 0, 0, half, targetH);
+    ctx.drawImage(R.renderer.domElement, half, 0, half, targetH);
+    // overlay text from DOM is not captured; instead burn-in step desc + badges
+    ctx.fillStyle = 'rgba(15,16,32,0.75)';
+    ctx.fillRect(0, targetH - 110, targetW, 110);
+    ctx.fillStyle = '#f5f5dc';
+    ctx.font = '600 26px -apple-system, "PingFang TC", sans-serif';
+    ctx.fillText(i18n[currentLang].desc[currentStep], 32, targetH - 60);
+    ctx.fillStyle = '#4ecdc4';
+    ctx.font = '700 20px -apple-system, "PingFang TC", sans-serif';
+    ctx.fillText(i18n[currentLang].leftLabel, 32, 44);
+    ctx.fillStyle = '#ffa64d';
+    ctx.fillText(i18n[currentLang].rightLabel, half + 32, 44);
+    requestAnimationFrame(drawComposite);
+  }
+  drawComposite();
+
+  const stream = composite.captureStream(30);
+  const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+    ? 'video/webm;codecs=vp9' : 'video/webm';
+  recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  recorder.onstop = () => {
+    stopped = true;
+    const blob = new Blob(chunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cervical-coupling-${Date.now()}.webm`;
+    a.click();
+    URL.revokeObjectURL(url);
+    cleanupRecording();
+  };
+  recorder.start();
+  recording = true;
+  recBtn.innerHTML = '⏹ <span>' + i18n[currentLang].recStop + '</span>';
+
+  // run autoplay then auto-stop
+  startAutoplay({ onDone: () => {
+    setTimeout(() => { if (recorder && recorder.state === 'recording') recorder.stop(); }, 500);
+  }});
+}
+
+function cleanupRecording() {
+  recording = false;
+  recorder = null;
+  document.body.classList.remove('recording');
+  recBtn.innerHTML = '📹 <span>' + i18n[currentLang].rec + '</span>';
+  // restore renderer sizes to wrappers
+  setTimeout(resize, 0);
+}
+
+recBtn.addEventListener('click', () => {
+  if (recording) {
+    if (recorder && recorder.state === 'recording') recorder.stop();
+  } else {
+    startRecording().catch(err => {
+      console.error(err);
+      cleanupRecording();
+      alert('錄製啟動失敗 / Recording failed: ' + err.message);
+    });
+  }
+});
+
+/* === keyboard === */
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') setStep(currentStep + 1);
+  else if (e.key === 'ArrowLeft') setStep(currentStep - 1);
+  else if (e.key === ' ') { e.preventDefault(); playing ? stopAutoplay() : startAutoplay(); }
+  else if (e.key === 'r' || e.key === 'R') setStep(0);
+});
+
+/* === init === */
+applyLang();
+setStep(0, true);
+</script>
+</body>
+</html>
+
