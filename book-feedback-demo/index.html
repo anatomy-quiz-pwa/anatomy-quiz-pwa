@@ -2,105 +2,297 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>Book Feedback 模擬器 — Demo</title>
+<title>Book Feedback 模擬器</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
 * { box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 0; background: #fafaf7; color: #1a1a1a; line-height: 1.6; }
-header { background: #1a1a1a; color: #fff; padding: 18px 28px; position: sticky; top: 0; z-index: 10; }
-header h1 { margin: 0; font-size: 20px; display: inline; }
-header .subtitle { color: #999; font-size: 13px; margin-left: 12px; }
-.demo-banner { background: #f4e3a3; color: #5a4400; padding: 10px 20px; font-size: 14px; border-bottom: 1px solid #d4b860; }
-.demo-banner strong { color: #4a3300; }
-.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
-.panel { background: #fff; border: 1px solid #e5e3da; border-radius: 8px; padding: 24px; margin-bottom: 20px; }
-.panel h2 { margin: 0 0 16px 0; font-size: 18px; }
-.panel h3 { margin: 16px 0 8px 0; font-size: 15px; color: #555; }
-button { padding: 10px 18px; border: 0; border-radius: 5px; font-size: 14px; cursor: pointer; background: #2a4a2a; color: #fff; }
-button:disabled { background: #999; cursor: not-allowed; opacity: 0.7; }
-button.secondary { background: #6a6a6a; }
-.session-item { padding: 12px 14px; border: 1px solid #e5e3da; border-radius: 6px; background: #2a4a2a; color: #fff; display: flex; justify-content: space-between; align-items: center; }
-.session-item .meta { font-size: 12px; color: #b0d0b0; }
-.version-tab { padding: 6px 12px; border: 1px solid #d0cdc0; border-radius: 5px; background: #2a4a2a; color: #fff; font-size: 13px; display: inline-block; margin-right: 8px; }
-.markdown-body { line-height: 1.8; font-size: 15px; padding: 8px 4px; }
-.markdown-body h1 { font-size: 24px; margin-top: 0; padding-bottom: 12px; border-bottom: 2px solid #1a1a1a; }
-.markdown-body h2 { font-size: 19px; margin-top: 32px; padding-bottom: 6px; border-bottom: 1px solid #d8d6cc; }
-.markdown-body h3 { font-size: 16px; margin-top: 22px; color: #333; }
-.markdown-body blockquote { margin: 12px 0; padding: 10px 16px; background: #f4f8f4; border-left: 4px solid #2a4a2a; color: #2a4a2a; font-style: italic; }
-.markdown-body table { border-collapse: collapse; margin: 12px 0; width: 100%; font-size: 13px; }
-.markdown-body th, .markdown-body td { border: 1px solid #d8d6cc; padding: 8px 12px; text-align: left; vertical-align: top; }
-.markdown-body th { background: #f4f2ec; }
-.markdown-body code { background: #f4f2ec; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
-.markdown-body strong { color: #1a1a1a; }
-.markdown-body ul, .markdown-body ol { padding-left: 24px; }
-.markdown-body li { margin: 4px 0; }
-.help { font-size: 12px; color: #888; }
-details summary { cursor: pointer; padding: 6px 0; font-weight: 500; color: #555; }
-.passage-box { background: #f9f7f0; border: 1px dashed #d4b860; padding: 16px; border-radius: 6px; margin: 12px 0; line-height: 1.9; font-size: 14px; white-space: pre-wrap; }
-#boot { padding: 40px; text-align: center; color: #888; }
+body { font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; margin: 0; background: #fafaf7; color: #1a1a1a; line-height: 1.55; font-size: 14px; }
+header { background: #1a1a1a; color: #fff; padding: 12px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 20; }
+header h1 { margin: 0; font-size: 17px; font-weight: 600; }
+header .sub { color: #999; font-size: 12px; flex: 1; }
+header a.notion { background: #f0f0f0; color: #333; padding: 6px 12px; border-radius: 5px; text-decoration: none; font-size: 12px; }
+header a.notion:hover { background: #fff; }
+.banner { background: #f4e3a3; color: #5a4400; padding: 8px 24px; font-size: 12px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 14px 24px; background: #fff; border-bottom: 1px solid #e5e3da; }
+.kpi { padding: 10px 12px; border-radius: 6px; background: #f4f2ec; }
+.kpi .l { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.3px; }
+.kpi .v { font-size: 20px; font-weight: 600; color: #1a1a1a; }
+.kpi .v small { font-size: 12px; color: #999; font-weight: normal; }
+.kpi.alert { background: #fff0e8; }
+.kpi.alert .v { color: #aa3a3a; }
+.kpi.warn { background: #fff7e0; }
+main { display: grid; grid-template-columns: 360px 1fr; min-height: calc(100vh - 140px); }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+.left { background: #f4f2ec; border-right: 1px solid #e5e3da; padding: 12px 0; overflow-y: auto; max-height: calc(100vh - 140px); position: sticky; top: 140px; }
+.left .group { margin-bottom: 14px; }
+.left .group-h { padding: 6px 16px; font-size: 11px; color: #666; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
+.left .group-h .ct { background: #ddd9c8; padding: 2px 7px; border-radius: 10px; font-size: 11px; }
+.left .item { padding: 10px 14px 10px 16px; cursor: pointer; border-left: 3px solid transparent; font-size: 13px; line-height: 1.5; display: flex; gap: 8px; transition: all 0.1s; }
+.left .item:hover { background: #ebe7d8; }
+.left .item.active { background: #fff; border-left-color: #2a4a2a; }
+.left .item .ic { font-size: 16px; flex: 0 0 auto; line-height: 1; padding-top: 1px; }
+.left .item .tx { flex: 1 1 auto; min-width: 0; }
+.left .item .tx .h { font-weight: 600; color: #1a1a1a; }
+.left .item .tx .q { color: #666; font-size: 12px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.left .item.done .h { text-decoration: line-through; color: #999; }
+.left .item.done .ic { opacity: 0.4; }
+.left .filters { padding: 8px 16px; display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid #e5e3da; margin-bottom: 8px; }
+.left .filters button { background: #fff; border: 1px solid #d0cdc0; padding: 4px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; color: #555; }
+.left .filters button.on { background: #2a4a2a; color: #fff; border-color: #2a4a2a; }
+.right { padding: 0; background: #fff; }
+.passage-card { padding: 16px 24px; border-bottom: 1px solid #e5e3da; background: #f9f7f0; }
+.passage-card .pt { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.passage-text { font-size: 14px; line-height: 1.95; color: #333; white-space: pre-wrap; max-height: 200px; overflow-y: auto; padding: 10px 14px; border: 1px dashed #d4b860; border-radius: 5px; background: #fff; }
+.passage-text mark { background: #ffe8a8; padding: 0 2px; }
+.passage-text mark.cur { background: #ffb84d; box-shadow: 0 0 0 2px #ffb84d; }
+.detail { padding: 24px; }
+.detail-empty { color: #999; padding: 60px 24px; text-align: center; font-size: 14px; }
+.detail h2 { margin: 0 0 6px 0; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+.detail .quote-orig { background: #fff0e8; border-left: 4px solid #aa3a3a; padding: 12px 16px; margin: 14px 0; border-radius: 0 5px 5px 0; font-size: 14px; line-height: 1.7; color: #1a1a1a; }
+.detail .field { margin: 16px 0; }
+.detail .field-label { font-size: 12px; color: #666; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.detail .field-content { font-size: 14px; line-height: 1.8; color: #1a1a1a; }
+.detail .fix-block { background: #f4f8f4; border-left: 4px solid #2a4a2a; padding: 12px 16px; border-radius: 0 5px 5px 0; }
+.detail .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.detail .chip { background: #f0eee5; padding: 3px 9px; border-radius: 11px; font-size: 12px; color: #444; }
+.detail .chip.zh { background: #e8f0f8; }
+.detail .chip.en { background: #f0e8f0; }
+.detail .chip.jp { background: #f8e8e0; }
+.detail .ab-table { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.detail .ab-cell { background: #f9f7f0; padding: 12px 14px; border-radius: 6px; font-size: 13px; line-height: 1.7; }
+.detail .ab-cell.a { border-left: 4px solid #4a7a4a; }
+.detail .ab-cell.b { border-left: 4px solid #7a4a4a; }
+.detail .ab-cell .lbl { font-size: 11px; color: #666; font-weight: 700; text-transform: uppercase; }
+.detail .ab-cell h4 { margin: 4px 0 8px 0; font-size: 14px; }
+.detail .ab-cell .pro { color: #2a4a2a; }
+.detail .ab-cell .con { color: #aa3a3a; }
+.detail .verdict-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.detail .verdict-badge.would_sign { background: #d4e8d4; color: #2a4a2a; }
+.detail .verdict-badge.conditional { background: #fff0d4; color: #aa6600; }
+.detail .verdict-badge.wont_sign { background: #f8d4d4; color: #aa3a3a; }
+.detail ul.asks { padding-left: 20px; margin: 8px 0; }
+.detail ul.asks li { margin: 4px 0; font-size: 13px; line-height: 1.7; }
+.detail .checkbox-row { padding: 8px 12px; background: #f4f2ec; border-radius: 5px; display: flex; gap: 10px; align-items: center; cursor: pointer; user-select: none; margin-top: 16px; }
+.detail .checkbox-row:hover { background: #ebe7d8; }
+#boot { padding: 60px 24px; text-align: center; color: #888; font-size: 14px; }
+#boot.err { color: #aa3a3a; }
 </style>
 </head>
 <body>
-<header><h1>📚 Book Feedback 模擬器</h1><span class="subtitle">25 persona × Claude Opus 4.7 — 唯讀 Demo</span></header>
-<div class="demo-banner">⚠️ <strong>Demo 模式（唯讀）</strong> — 預先烘焙了《骨頭》第 3 章 v1 的真實模擬結果。要實際跑 v2/v3 需在本機跑後端。</div>
+<header>
+  <h1>📚 Book Feedback 模擬器</h1>
+  <span class="sub">25 persona × Claude Opus 4.7 — 修書工作清單</span>
+  <a class="notion" id="notionBtn" href="#" target="_blank">📓 Notion 章節原文 →</a>
+</header>
+<div class="banner">⚠️ <strong>Demo 模式（唯讀）</strong> — 預先烘焙了《骨頭》第 3 章 v1 的真實模擬結果。要實際跑 v2/v3 需在本機跑後端。完成的項目可勾選（記錄在你瀏覽器，下次回來還在）。</div>
 <div id="boot">⏳ 載入中...</div>
-<div id="app" class="container" style="display:none">
-  <div class="panel">
-    <h2>📁 Session</h2>
-    <div class="session-item">
-      <div><div><strong id="sn"></strong></div><div class="meta" id="sm"></div></div>
-      <div class="meta" id="sd"></div>
+<div id="app" style="display:none">
+  <div class="kpis">
+    <div class="kpi"><div class="l">沉浸度</div><div class="v" id="kpi-eng">—</div></div>
+    <div class="kpi warn"><div class="l">對作者信任</div><div class="v" id="kpi-trust">—</div></div>
+    <div class="kpi alert"><div class="l">文化舒適度</div><div class="v" id="kpi-cult">—</div></div>
+    <div class="kpi alert"><div class="l">主要警報</div><div class="v" id="kpi-alert">—</div></div>
+  </div>
+  <main>
+    <div class="left">
+      <div class="filters">
+        <button class="on" data-f="all">全部</button>
+        <button data-f="must_fix">🔴 必改</button>
+        <button data-f="jp">🇯🇵 日本相關</button>
+        <button data-f="undone">未勾選</button>
+      </div>
+      <div id="list"></div>
     </div>
-    <div class="help" style="margin-top:8px"><strong>session 目標</strong>：<span id="sg"></span></div>
-  </div>
-  <div class="panel">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <span class="version-tab">v1</span>
-      <button class="secondary" onclick="showPersonas()">查看 25 persona</button>
+    <div class="right">
+      <div class="passage-card">
+        <div class="pt">📄 v1 試寫段落（紅底 = 踩雷句／黃底 = 寫得好）</div>
+        <div class="passage-text" id="passage"></div>
+      </div>
+      <div class="detail" id="detail">
+        <div class="detail-empty">← 點左邊清單任一項目，這裡會顯示細節 + 試寫段落會 highlight 出對應的句子</div>
+      </div>
     </div>
-    <details><summary>📄 v1 試寫段落</summary><div class="passage-box" id="pa"></div></details>
-    <div id="card"></div>
-  </div>
-  <div class="panel" style="background:#f9f7f0;border-style:dashed">
-    <h2>📖 關於</h2>
-    <p style="font-size:14px;color:#555">25 個虛擬讀者（6 中 + 8 英 + 4 日 + 4 編輯 + 3 書評）讀同一段試寫，聚合成「修書工作清單」。本 demo 的 v1 是設計來踩雷的「日本跪坐」段落，系統正確抓出『痛是身為日本女人的一部分，像四季更迭』作為地雷單句。</p>
-  </div>
+  </main>
 </div>
 <script>
-let META = null;
-const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let DATA = {};
+let SEL = null;
+let FILTER = "all";
+const DONE = JSON.parse(localStorage.getItem("bf_done") || "{}");
+const esc = s => String(s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 async function boot() {
   const b = document.getElementById('boot');
   try {
-    b.textContent = '⏳ 載入 meta...';
-    META = await (await fetch('./meta.json')).json();
-    b.textContent = '⏳ 載入 result card (3 chunks)...';
-    const [c1,c2,c3] = await Promise.all([
-      fetch('./card1.md').then(r=>r.text()),
-      fetch('./card2.md').then(r=>r.text()),
-      fetch('./card3.md').then(r=>r.text()),
+    const [a, fix, st, dec] = await Promise.all([
+      fetch('./demo_meta.json').then(r=>r.json()),
+      fetch('./demo_fix.json').then(r=>r.json()),
+      fetch('./demo_struct.json').then(r=>r.json()),
+      fetch('./demo_decide.json').then(r=>r.json()),
     ]);
-    const md = c1 + "\n\n" + c2 + "\n\n" + c3;
-    document.getElementById('sn').textContent = META.name;
-    document.getElementById('sm').textContent = `${META.session_id} · 1 個版本 · ✓ persona ready`;
-    document.getElementById('sd').textContent = META.created_at.split('T')[0];
-    document.getElementById('sg').textContent = META.session_goal || '（未設定）';
-    document.getElementById('pa').textContent = META.passage;
-    if (typeof marked !== 'undefined') {
-      document.getElementById('card').innerHTML = `<div class="markdown-body">${marked.parse(md)}</div>`;
-    } else {
-      document.getElementById('card').innerHTML = `<pre style="white-space:pre-wrap;font-size:13px">${esc(md)}</pre>`;
-    }
+    DATA = { ...a, ...fix, ...st, ...dec };
+    init();
     b.style.display = 'none';
     document.getElementById('app').style.display = 'block';
   } catch (e) {
-    b.innerHTML = `<div style="color:#aa3a3a">啟動失敗：${esc(e.message)}</div>`;
+    b.className = 'err';
+    b.textContent = '啟動失敗：' + e.message;
   }
 }
-function showPersonas() {
-  const w = window.open('', '_blank');
-  w.document.write(`<title>25 personas</title><pre style="font-family:ui-monospace,monospace;padding:20px;background:#1a1a1a;color:#dfd;font-size:12px;line-height:1.6;white-space:pre-wrap">${esc(JSON.stringify(META.personas, null, 2))}</pre>`);
+function init() {
+  if (DATA.notion_url) document.getElementById('notionBtn').href = DATA.notion_url;
+  const sg = DATA.safeguards;
+  document.getElementById('kpi-eng').innerHTML = sg.avg_engagement + ' <small>/ 5</small>';
+  document.getElementById('kpi-trust').innerHTML = sg.avg_trust + ' <small>/ 5</small>';
+  document.getElementById('kpi-cult').innerHTML = sg.avg_cultural_comfort + ' <small>/ 5</small>';
+  document.getElementById('kpi-alert').innerHTML = sg.japanese_cultural_alert ? '🚨 日本文化警報' : '✓ 無警報';
+  document.querySelectorAll('.filters button').forEach(btn => {
+    btn.onclick = () => {
+      FILTER = btn.dataset.f;
+      document.querySelectorAll('.filters button').forEach(x => x.classList.toggle('on', x.dataset.f === FILTER));
+      renderList();
+    };
+  });
+  renderList();
+  renderPassage();
+}
+function getAllItems() {
+  const items = [];
+  items.push({ id:'headline', cat:'headline', cat_l:'一句話結論', icon:'📝', title:'一句話結論', quote:DATA.headline_verdict||'', detail_kind:'headline' });
+  (DATA.must_fix || []).forEach((m, i) => items.push({ id:'mf_'+(m.rank||i+1), cat:'must_fix', cat_l:'必改', icon:typeIcon(m.issue_type), title:typeLabel(m.issue_type)+' #'+(m.rank||i+1), quote:m.trigger_quote||m.what_breaks||'', detail_kind:'must_fix', raw:m }));
+  (DATA.structural_concerns || []).forEach((s, i) => items.push({ id:'st_'+i, cat:'structural', cat_l:'結構性問題', icon:'🏗', title:'結構性問題 '+(i+1), quote:s.concern||'', detail_kind:'structural', raw:s }));
+  (DATA.strategic_decisions_for_author || []).forEach((s, i) => items.push({ id:'sd_'+i, cat:'decide', cat_l:'你必須親自決定', icon:'🎯', title:'策略決定 '+(i+1), quote:s.the_question||'', detail_kind:'decision', raw:s }));
+  (DATA.what_is_working || []).forEach((w, i) => items.push({ id:'wk_'+i, cat:'working', cat_l:'已寫得好的', icon:'🟢', title:'寫得好 '+(i+1), quote:w.what||'', detail_kind:'working', raw:w }));
+  (DATA.editor_verdicts || []).forEach((e, i) => items.push({ id:'ed_'+i, cat:'editor', cat_l:'編輯立場', icon:verdictIcon(e.verdict), title:(DATA.label_map[e.editor_persona_id]||e.editor_persona_id), quote:e.one_line_reason||'', detail_kind:'editor', raw:e }));
+  (DATA.critic_voices || []).forEach((c, i) => items.push({ id:'cr_'+i, cat:'critic', cat_l:'書評/Podcast', icon:'📣', title:(DATA.label_map[c.critic_persona_id]||c.critic_persona_id), quote:c.what_they_would_say_publicly||'', detail_kind:'critic', raw:c }));
+  const mkt = DATA.market_specific_notes || {};
+  [['mkt_zh','🇹🇼','中文讀者集體訊息',mkt.zh_readers_say],['mkt_en','🇺🇸','英文讀者集體訊息',mkt.en_readers_say],['mkt_jp','🇯🇵','日本讀者集體訊息（最關鍵）',mkt.jp_readers_say]].forEach(([id,icon,title,txt]) => { if(txt) items.push({ id, cat:'market', cat_l:'三市場訊息', icon, title, quote:(txt||'').substring(0,80)+'...', detail_kind:'market', raw:{full_text:txt,title} }); });
+  return items;
+}
+function typeIcon(t){return ({killer_sentence:'💣',fact_error:'📚',missing_qualifier:'⚠️',cultural_landmine:'🌏'})[t]||'🔴';}
+function typeLabel(t){return ({killer_sentence:'致命單句',fact_error:'事實錯誤',missing_qualifier:'缺限定語',cultural_landmine:'文化地雷'})[t]||'必改';}
+function verdictIcon(v){return ({would_sign:'✅',conditional:'⚠️',wont_sign:'❌'})[v]||'📋';}
+function renderList() {
+  const items = getAllItems();
+  const filtered = items.filter(it => {
+    if (FILTER === 'all') return true;
+    if (FILTER === 'must_fix') return it.cat === 'must_fix';
+    if (FILTER === 'undone') return !DONE[it.id];
+    if (FILTER === 'jp') {
+      const txt = JSON.stringify(it.raw||it.quote||'').toLowerCase();
+      return /jp_|日本|tanaka|田中|nakamura|中村|sato|佐|jp\b/.test(txt);
+    }
+    return true;
+  });
+  const groups = {};
+  for (const it of filtered) {
+    if (!groups[it.cat]) groups[it.cat] = { name: it.cat_l, items: [] };
+    groups[it.cat].items.push(it);
+  }
+  const order = ['headline','must_fix','structural','decide','working','editor','critic','market'];
+  const html = [];
+  for (const k of order) {
+    if (!groups[k]) continue;
+    const g = groups[k];
+    html.push(`<div class="group"><div class="group-h">${esc(g.name)}<span class="ct">${g.items.length}</span></div>`);
+    for (const it of g.items) {
+      const done = DONE[it.id] ? ' done' : '';
+      const active = SEL && SEL.id === it.id ? ' active' : '';
+      html.push(`<div class="item${active}${done}" data-id="${it.id}"><span class="ic">${it.icon}</span><div class="tx"><div class="h">${esc(it.title)}</div><div class="q">${esc(it.quote)}</div></div></div>`);
+    }
+    html.push('</div>');
+  }
+  document.getElementById('list').innerHTML = html.join('');
+  document.querySelectorAll('.left .item').forEach(el => {
+    el.onclick = () => selectItem(items.find(i => i.id === el.dataset.id));
+  });
+}
+function selectItem(it) { SEL = it; renderDetail(it); renderPassage(); document.querySelectorAll('.left .item').forEach(el => el.classList.toggle('active', el.dataset.id === it.id)); }
+function renderDetail(it) {
+  if (!it) return;
+  const d = document.getElementById('detail');
+  let html = `<h2>${it.icon} ${esc(it.title)}</h2>`;
+  const r = it.raw || {};
+  if (it.detail_kind === 'headline') html += `<div class="field-content" style="font-size:15px;line-height:1.9">${esc(it.quote)}</div>`;
+  if (it.detail_kind === 'must_fix') {
+    if (r.trigger_quote) html += `<div class="quote-orig">「${esc(r.trigger_quote)}」</div>`;
+    if (r.what_breaks) html += renderField('問題', r.what_breaks);
+    if (r.who_will_react_badly) html += renderField('誰會生氣', r.who_will_react_badly);
+    if (r.concrete_fix) html += `<div class="field"><div class="field-label">怎麼改（具體示範）</div><div class="fix-block">${esc(r.concrete_fix)}</div></div>`;
+    if (r.applies_to) html += renderField('適用', applyLabel(r.applies_to));
+    if (r.personas_evidencing && r.personas_evidencing.length) html += renderChips('反應到的人', r.personas_evidencing);
+  }
+  if (it.detail_kind === 'structural') {
+    if (r.why_matters) html += renderField('為什麼比單句嚴重', r.why_matters);
+    if (r.highest_leverage_fix) html += `<div class="field"><div class="field-label">最高槓桿的修法</div><div class="fix-block">${esc(r.highest_leverage_fix)}</div></div>`;
+    if (r.personas_evidencing && r.personas_evidencing.length) html += renderChips('反應到的人', r.personas_evidencing);
+  }
+  if (it.detail_kind === 'decision') {
+    html += `<div class="field"><div class="field-label">問題</div><div class="field-content">${esc(r.the_question||'')}</div></div>`;
+    const a = r.option_a||{}, b = r.option_b||{};
+    html += `<div class="ab-table"><div class="ab-cell a"><div class="lbl">選 A</div><h4>${esc(a.label||'A')}</h4><div>${esc(a.description||'')}</div><div class="pro" style="margin-top:8px">✓ ${esc(a.pro||'')}</div><div class="con" style="margin-top:4px">✗ ${esc(a.con||'')}</div></div><div class="ab-cell b"><div class="lbl">選 B</div><h4>${esc(b.label||'B')}</h4><div>${esc(b.description||'')}</div><div class="pro" style="margin-top:8px">✓ ${esc(b.pro||'')}</div><div class="con" style="margin-top:4px">✗ ${esc(b.con||'')}</div></div></div>`;
+    if (r.data_split) html += renderField('讀者分布', r.data_split);
+    if (r.why_only_author_can_decide) html += renderField('為什麼編輯不能替你決定', r.why_only_author_can_decide);
+    if (r.personas_pro_a && r.personas_pro_a.length) html += renderChips('傾向 A 的人', r.personas_pro_a);
+    if (r.personas_pro_b && r.personas_pro_b.length) html += renderChips('傾向 B 的人', r.personas_pro_b);
+  }
+  if (it.detail_kind === 'working') {
+    if (r.evidence_quote) html += `<div class="quote-orig" style="background:#e8f4e8;border-left-color:#2a4a2a;color:#2a4a2a">「${esc(r.evidence_quote)}」</div>`;
+    if (r.why_it_works) html += renderField('為什麼有效', r.why_it_works);
+    if (r.warning_if_changed) html += renderField('動了會破壞什麼', r.warning_if_changed);
+    if (r.personas_endorsing && r.personas_endorsing.length) html += renderChips('讚的人', r.personas_endorsing);
+  }
+  if (it.detail_kind === 'editor') {
+    html += `<div class="field"><span class="verdict-badge ${r.verdict}">${verdictLabel(r.verdict)}</span></div>`;
+    if (r.one_line_reason) html += renderField('理由', r.one_line_reason);
+    if (r.specific_asks && r.specific_asks.length) {
+      html += `<div class="field"><div class="field-label">他/她會要求改的</div><ul class="asks">`;
+      r.specific_asks.forEach(a => html += `<li>${esc(a)}</li>`);
+      html += `</ul></div>`;
+    }
+  }
+  if (it.detail_kind === 'critic') {
+    if (r.would_recommend) html += renderField('立場', recLabel(r.would_recommend));
+    if (r.what_they_would_say_publicly) html += `<div class="quote-orig" style="background:#fff7e0;border-left-color:#aa6600">「${esc(r.what_they_would_say_publicly)}」</div>`;
+  }
+  if (it.detail_kind === 'market') html += `<div class="field-content" style="font-size:14px;line-height:1.9">${esc(r.full_text||'')}</div>`;
+  const isDone = !!DONE[it.id];
+  html += `<label class="checkbox-row" id="cb-row"><input type="checkbox" id="cb" ${isDone?'checked':''}> 標記為已處理</label>`;
+  d.innerHTML = html;
+  document.getElementById('cb').onchange = (e) => {
+    if (e.target.checked) DONE[it.id] = true; else delete DONE[it.id];
+    localStorage.setItem('bf_done', JSON.stringify(DONE));
+    renderList();
+  };
+}
+function renderField(label, content) { return `<div class="field"><div class="field-label">${esc(label)}</div><div class="field-content">${esc(content)}</div></div>`; }
+function renderChips(label, ids) {
+  const map = DATA.label_map || {};
+  const html = ids.map(pid => {
+    const lbl = map[pid] || pid;
+    const cls = pid.includes('zh') ? 'zh' : pid.includes('en') ? 'en' : pid.includes('jp') ? 'jp' : '';
+    return `<span class="chip ${cls}">${esc(lbl)}</span>`;
+  }).join('');
+  return `<div class="field"><div class="field-label">${esc(label)}（${ids.length} 位）</div><div class="chips">${html}</div></div>`;
+}
+function applyLabel(a) { return ({both:'中英版皆適用',zh_only:'僅中文版',en_only:'僅英文版',jp_only:'僅日文版'})[a]||a; }
+function verdictLabel(v) { return ({would_sign:'✅ 會簽',conditional:'⚠️ 修改後再評估',wont_sign:'❌ 拒絕'})[v]||v; }
+function recLabel(r) { return ({yes:'👍 會推薦',no:'👎 不推',critical_review:'📝 會寫批判性書評'})[r]||r; }
+function renderPassage() {
+  const passage = DATA.passage || '';
+  const quotes = [];
+  (DATA.must_fix||[]).forEach(m => { if (m.trigger_quote) quotes.push({q:m.trigger_quote,kind:'bad',id:'mf_'+(m.rank||0)}); });
+  (DATA.what_is_working||[]).forEach((w,i) => { if (w.evidence_quote) quotes.push({q:w.evidence_quote,kind:'good',id:'wk_'+i}); });
+  let html = esc(passage);
+  quotes.sort((a,b) => b.q.length - a.q.length);
+  for (const item of quotes) {
+    const escQ = esc(item.q);
+    const isCur = SEL && SEL.id === item.id;
+    const open = `<mark${isCur?' class="cur"':''} style="${item.kind==='good'?'background:#d4f0d4':''}">`;
+    html = html.replace(escQ, open + escQ + '</mark>');
+  }
+  document.getElementById('passage').innerHTML = html;
+  if (SEL) setTimeout(() => { const cur = document.querySelector('#passage mark.cur'); if (cur) cur.scrollIntoView({block:'center',behavior:'smooth'}); }, 50);
 }
 boot();
 </script>
