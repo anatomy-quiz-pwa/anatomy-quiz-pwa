@@ -1,6 +1,39 @@
 # 📍 CHECKPOINT — 《骨頭》Book Feedback 系統
 
-**日期**：2026-05-01｜**狀態**：v1 已測試完成，v2 待寫｜**累積成本**：~$8 USD Anthropic credits
+**最後更新**：2026-05-01｜**狀態**：v1 已測試 + v2 demo UI 已部署，等待作者決定下一步｜**累積成本**：~$8 USD Anthropic credits
+
+---
+
+## 🆕 後續更新（2026-05-01 後半段）
+
+### 已完成
+- ✅ **v2 demo UI 改版** — 從一坨 markdown 改成「左側可點清單 + 右側細節 + 試寫段落 highlight」兩欄式 card-based UI
+- ✅ **Vercel 部署** — `book-feedback-demo` branch auto-deploy，最新 deployment `dpl_ALfGZRjFe47c4XTyfybWTtP3LPMz`
+- ✅ **試寫段落自動 highlight** 紅底 = 踩雷句（must_fix）／綠底 = 寫得好的（what_is_working）／橘色框 = 當前選中
+- ✅ **完成項目可勾選** — checkbox 狀態存 localStorage（你下次回來還在）
+- ✅ **filters**：全部 / 🔴 必改 / 🇯🇵 日本相關 / 未勾選
+- ✅ **Notion 連結按鈕** — 跳到 https://www.notion.so/book-353405855dab803c89f5eea43c82093b
+- ✅ **Notion 章節結構** — 提供 CSV（章節清單資料庫）+ Markdown（Ch3 跪坐詳細頁），可直接貼到 Notion
+
+### Demo URL（最新版）
+https://anatomy-quiz-hm2329yka-anatomy-quiz-pwas-projects.vercel.app/book-feedback-demo/?_vercel_share=rErj157BBDac1uKCER13UvEJxNRSRI5A
+
+23h 免登入。永久免登入 → 去 Vercel dashboard promote 那個 deployment 為 production（你之前 promote 過 v1，會操作）。
+
+### 未決定的 3 條路線（你回來時挑一個）
+
+| 路線 | 你做什麼 | 工時 | 適合誰 |
+|---|---|---|---|
+| **A. 跑 v2 試寫看反應** | 給 Claude v2 段落，沙箱跑 25 persona | 5 分鐘 + ~$2 | 你想立刻看修改效果 |
+| **B. Backend 搬到 Mac 本機** | 我把 16 個檔 push 到 GitHub `mirofish-overlay/`，你 Mac 上 Claude 照 SETUP.md 跟著做 | 我 push ~8 turns + 你 Mac ~30 分鐘 | 你要長期維護、跑多章節 |
+| **C. 沙箱 session 資料備份到 GitHub** | 我把 personas + reactions + result card 切片 push 到 GitHub | ~9 turns | 怕沙箱 session 消失（這是真的會發生）|
+
+### 在沙箱 VM（隨時可能消失）但**沒備份**到 GitHub 的東西
+- `backend/uploads/feedback_sessions/fbs_ba661c3ab109/personas.json`（25 persona 完整資料）
+- `backend/uploads/feedback_sessions/fbs_ba661c3ab109/reactions/v1.json`（25 reactions × Claude Opus 真的花 $3 跑出來的）
+- `backend/uploads/feedback_sessions/fbs_ba661c3ab109/result_cards/v1.json`（結構化 8 段 card）
+
+> **如果**沙箱 session 不持續，這些消失就要重花 $5-8 重跑。**已切片但還沒 push 的檔**在 `/tmp/personas_part{1,2}.json` + `/tmp/reactions_v1_part{1,2,3,4}.json`，每片 7-14k chars，等你說「備份」就推。
 
 ---
 
@@ -37,14 +70,12 @@
 - **25/25 reactions 全到齊**
 - **Result Card**：8 段完整，含 6 必改、2 結構性問題、4 寫得好、2 策略決定、4 編輯立場、3 書評 voice、3 市場訊息
 - **資料位置**：`/root/Projects/MiroFish/backend/uploads/feedback_sessions/fbs_ba661c3ab109/`
-  - `session.json` / `personas.json` / `versions/v1.txt` / `reactions/v1.json` / `result_cards/v1.{json,md}`
 
 ### 3. 部署的前端（Vercel 靜態 demo）
 
-- **URL（23h 免登入）**：https://anatomy-quiz-hm2329yka-anatomy-quiz-pwas-projects.vercel.app/book-feedback-demo/?_vercel_share=rErj157BBDac1uKCER13UvEJxNRSRI5A
+- **URL（23h 免登入）**：見上方
 - **GitHub**：`anatomy-quiz-pwa/anatomy-quiz-pwa` repo, branch `book-feedback-demo`, folder `book-feedback-demo/`
 - **UI 特色**：兩欄式卡片 + 試寫段落 highlight 踩雷句 + checkbox 進度（localStorage）+ Notion 連結
-- **永久免登入**：去 Vercel dashboard promote 最新部署到 production（`dpl_ALfGZRjFe47c4XTyfybWTtP3LPMz`）
 
 ---
 
@@ -88,16 +119,22 @@
 
 ## ⏭️ Next Steps（你下次回來）
 
-1. **決定 2 個策略題**（A 老太太開口 / B 科普嚴謹度）
-2. **寫 v2 試寫段落**（500-2000 字，把 6 個必改 + 結構性問題納入）
-3. **跑 v2 模擬**：
-   - 啟動 backend：`cd /root/Projects/MiroFish && npm run backend`
-   - `curl -X POST http://localhost:5001/api/feedback/session/fbs_ba661c3ab109/version -H "Content-Type: application/json" -d '{"passage": "...", "version_focus": "..."}'`
-   - 等 ~3 分鐘
-4. **拿 v1 vs v2 diff card**：`curl http://localhost:5001/api/feedback/session/fbs_ba661c3ab109/diff?from=v1&to=v2`
-5. **重新 bake demo + 部署**：用同樣流程 push 到 `book-feedback-demo` 分支
+**先決定**：你選 A / B / C（見上面「未決定的 3 條路線」）。
 
-預估 v2 跑一輪 reactions + result card + diff = ~$2-3 USD。
+如果選 **A 跑 v2**：
+1. 決定 2 個策略題（A 老太太開口 / B 科普嚴謹度）
+2. 寫 v2 試寫段落（500-2000 字，把 6 個必改 + 結構性問題納入）
+3. 跟 Claude 說「跑 v2，passage = ...」
+4. 等 ~3 分鐘 → 拿 v1 vs v2 diff card
+
+如果選 **B Mac 本機**：
+1. 我先 push 16 個 backend 檔到 `mirofish-overlay/`
+2. 我 push SETUP.md
+3. 你 Mac 上 Claude Code → 「依照 https://github.com/anatomy-quiz-pwa/anatomy-quiz-pwa/blob/book-feedback-demo/mirofish-overlay/SETUP.md 設定」
+
+如果選 **C 備份**：
+1. 我 push 9 個 session 切片檔（personas × 2、reactions × 4、result_card、session、passage）
+2. 沙箱掛了你也保有完整資料
 
 ---
 
@@ -120,4 +157,4 @@ CSV 章節清單 + Ch3 詳細頁 markdown 已在對話中提供，可貼到 Noti
 
 ---
 
-_由 Book Feedback 模擬器 session 產生，記錄完整 v1 測試結果與 v2 工作清單_
+_由 Book Feedback 模擬器 session 產生，記錄完整 v1 測試結果與下一步工作清單_
