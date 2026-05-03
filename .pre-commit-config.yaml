@@ -1,0 +1,129 @@
+# Pre-commit hooks for the anatomy-quiz-pwa project (Python + Flask + PWA/JS).
+# Docs: https://pre-commit.com
+#
+# How it works:
+#   1. `pre-commit install` registers a git hook in .git/hooks/pre-commit.
+#   2. On every `git commit`, the hooks below run on the *staged* files.
+#   3. Tool environments are cached under ~/.cache/pre-commit, so the first
+#      run is slow but subsequent runs are fast.
+#   4. Hooks marked `stages: [manual]` only run when invoked explicitly
+#      (e.g. `pre-commit run trivy --hook-stage manual --all-files`).
+#
+# To skip a single problematic commit (use sparingly!):
+#   SKIP=gitleaks,semgrep git commit -m "wip"
+#
+# To run every hook against the whole repo:
+#   pre-commit run --all-files
+
+minimum_pre_commit_version: "3.7.0"
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+
+# Skip large binary assets / generated dirs to keep scans fast.
+exclude: |
+  (?x)^(
+    .*\.png|
+    .*\.jpg|
+    .*\.jpeg|
+    .*\.ico|
+    static/brand_logo\.png|
+    google\ API\ 的json/.*|
+    \.venv/.*|
+    node_modules/.*|
+    practice_record\.json
+  )$
+
+repos:
+  # ---------------------------------------------------------------------------
+  # 1) Baseline hygiene — trailing whitespace, EOF newline, merge markers,
+  #    large files, syntax checks for YAML/JSON, accidental private keys.
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: check-yaml
+      - id: check-json
+        exclude: ^practice_record\.json$
+      - id: detect-private-key
+
+  # ---------------------------------------------------------------------------
+  # 2) Gitleaks — secret scanner (BLOCKS commits on detection).
+  #    False-positive overrides live in .gitleaksignore (commit hash + secret).
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+        name: gitleaks (secret scan, blocks commit)
+
+  # ---------------------------------------------------------------------------
+  # 3) Semgrep — multi-language SAST (BLOCKS commits on ERROR severity).
+  #    Curated rule packs cover Python, Flask, JS and OWASP Top 10.
+  #    To silence a finding, add `# nosemgrep: rule-id` on the offending line.
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.95.0
+    hooks:
+      - id: semgrep
+        name: semgrep (SAST, blocks on ERROR)
+        args:
+          - "--config=p/default"
+          - "--config=p/python"
+          - "--config=p/flask"
+          - "--config=p/javascript"
+          - "--config=p/owasp-top-ten"
+          - "--error"
+          - "--quiet"
+          - "--skip-unknown-extensions"
+          - "--metrics=off"
+
+  # ---------------------------------------------------------------------------
+  # 4) Bandit — Python-specific SAST (BLOCKS commits on HIGH severity).
+  #    Lower-severity findings only print warnings.
+  #    Per-line override: `# nosec B105` after the line.
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        name: bandit (python SAST, blocks HIGH)
+        args:
+          - "--severity-level=high"
+          - "--confidence-level=medium"
+          - "--quiet"
+        files: \.py$
+
+  # ---------------------------------------------------------------------------
+  # 5) Ruff — fast linter with security-relevant rules (S = bandit-style).
+  #    Warnings only; does NOT block commit. Auto-fix where possible.
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.2
+    hooks:
+      - id: ruff
+        name: ruff (lint + security warnings)
+        args: ["--fix", "--exit-zero", "--select=E,F,S,B"]
+      - id: ruff-format
+        name: ruff-format (auto format)
+
+  # ---------------------------------------------------------------------------
+  # 6) Trivy filesystem scan — manual stage only (heavy).
+  #    Run on demand: pre-commit run trivy --hook-stage manual --all-files
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/aquasecurity/trivy
+    rev: v0.57.0
+    hooks:
+      - id: trivy
+        name: trivy (manual deep scan)
+        stages: [manual]
+        args:
+          - "fs"
+          - "--scanners=vuln,secret,misconfig"
+          - "--severity=HIGH,CRITICAL"
+          - "--exit-code=1"
+          - "."

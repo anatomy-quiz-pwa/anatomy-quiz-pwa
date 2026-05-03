@@ -1,0 +1,10 @@
+# Semgrep path-based ignore file. Same syntax as .gitignore.
+# Use this for paths to skip entirely.
+# To silence a single line instead, add `# nosemgrep: rule-id` on that line.
+
+.venv/
+node_modules/
+static/
+templates/
+*.min.js
+practice_record.json

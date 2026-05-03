@@ -1,0 +1,43 @@
+# Dependabot — automated dependency vulnerability + version updates.
+# Alerts appear in: repo → Security tab → Dependabot.
+# Pull requests appear in: repo → Pull requests (label: "dependencies").
+
+version: 2
+updates:
+  # Python runtime dependencies (Flask, line-bot-sdk, etc.)
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: "Asia/Taipei"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - python
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      python-minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  # GitHub Actions used in workflows (keeps action versions current)
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: "Asia/Taipei"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      actions-minor-and-patch:
+        update-types: ["minor", "patch"]

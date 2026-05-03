@@ -1,0 +1,7 @@
+# Gitleaks ignore file.
+# Each line is a fingerprint of a known false-positive secret finding.
+# Format: <commit-sha>:<file>:<rule-id>:<line>
+# Get the fingerprint from gitleaks output (after "Fingerprint:").
+#
+# Example:
+#   abc1234567890:src/example.py:generic-api-key:42
